@@ -1,0 +1,26 @@
+Web Interface:
+- Add ability to save tests for future runs (and clear this)
+- Add tracking capabilities
+- Generate regular expressions from examples or wizard
+
+Command Line Interface:
+- Add exception handling to catch re.compile errors.
+
+Refactoring:
+- punct_marks being passed along?
+- possibly generate the character set sooner
+- make CharSet a class with public and private sections
+- traversal and subsequent processing (process_path) is inefficient and messy
+
+Enhancements:
+- Better duplicated character sets in character set warnings.
+- Category for alphanumeric strings with some acceptable punctuation that permits only punctuation. 
+- String where all optional items (? and *) are not selected.
+  * Misses single period on \d*\.\d*
+- Replace clear alphanumeric strings [\w+] with a word or number.
+- Double every punctuation mark.
+- Add a space before and after each punctuation mark (separately).
+- Remove each space (separately).
+- Analyzing "rejected" strings from tool that are actually accepted.
+- Analyze effects from the path traversal algorithm.
+- Group results better
