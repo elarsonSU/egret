@@ -23,8 +23,8 @@ EXT_LIB  := egret_ext.cpython-34m.so
 
 CXXFLAGS := -Wall -I. -g -O0 -fPIC
 
-SRC := egret.cpp Scanner.cpp ParseTree.cpp CharSet.cpp NFA.cpp Transition.cpp State.cpp Stats.cpp error.cpp
-HDR := Scanner.h ParseTree.h CharSet.h NFA.h Transition.h State.h Stats.h error.h
+SRC := egret.cpp Scanner.cpp ParseTree.cpp CharSet.cpp NFA.cpp TestGenerator.cpp Transition.cpp State.cpp Stats.cpp error.cpp
+HDR := Scanner.h ParseTree.h CharSet.h NFA.h TestGenerator.h Transition.h State.h Stats.h error.h
 OBJ := $(patsubst %.cpp, %.o, $(SRC))
 
 all: libegret.a egret_ext

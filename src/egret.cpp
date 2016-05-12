@@ -29,6 +29,7 @@
 #include "Scanner.h"
 #include "ParseTree.h"
 #include "NFA.h"
+#include "TestGenerator.h"
 #include "Transition.h"
 #include "error.h"
 
@@ -64,8 +65,9 @@ run_engine(string regex, bool debug = false, bool stat = false)
     NFA nfa;
     nfa.init(tree);
 
-    // traverse NFA
-    test_strings = nfa.nfa_traverse();
+    // generate tests
+    TestGenerator gen(nfa);
+    test_strings = gen.gen_test_strings();
 
     // print debug info
     if (debug_mode) {
@@ -81,6 +83,7 @@ run_engine(string regex, bool debug = false, bool stat = false)
       scanner.add_stats(stats);
       tree.add_stats(stats);
       nfa.add_stats(stats);
+      gen.add_stats(stats);
       stats.print();
     }
   }

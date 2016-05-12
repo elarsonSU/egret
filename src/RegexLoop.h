@@ -1,4 +1,4 @@
-/*  State.h: a state in an NFA and a path
+/*  RegexLoop.h: represents a regex repeat quantifier
 
     Copyright (C) 2016  Eric Larson and Anna Kirk
     elarson@seattleu.edu
@@ -19,32 +19,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef STATE_H
-#define STATE_H
+#ifndef REGEX_LOOP_H
+#define REGEX_LOOP_H
 
 #include <set>
 using namespace std;
 
-struct State
+struct RegexLoop
 {
-  bool begin_state;		// Set if state marks the beginning of repeat quantifier
- 				// or character set
-  bool end_repeat_state;	// Set if state marks the end of a repeating quantifier
-  bool end_charset_state;	// Set if state marks the end of a character set
-
-  int begin_index;		// Corresponding begin state index for end states
+  int begin_state;		// Beginning state
+  int end_state;		// Ending state
   int repeat_lower;     	// Lower bound for repeat quantifiers 
   int repeat_upper;     	// Upper bound for repeat quantifiers (-1 if no bound)
 
-  // Traversal information
-  bool visited;			// set when visited
-  int path_index;		// path that contains this state
-  string path_prefix;		// path string up to visiting this node (for paths[path_index])
-  string path_element;		// substring corresponding to the RE element (for END states only)
+  // traversal info
+  int path_index;               // path that contains the char set
+  string path_prefix;           // path string up to visiting this node
+  string substring;             // substring corresponding to this string
 
-  // Prints the state.
-  void print();
 };
 
-#endif // STATE
+#endif // REGEX_LOOP_H
 

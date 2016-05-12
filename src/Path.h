@@ -1,4 +1,4 @@
-/*  Transition.h: a transition in an NFA and a path 
+/*  Path.h: Represents a path through the NFA
 
     Copyright (C) 2016  Eric Larson and Anna Kirk
     elarson@seattleu.edu
@@ -19,32 +19,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TRANSITION_H
-#define TRANSITION_H
+#ifndef PATH_H
+#define PATH_H
 
 #include "CharSet.h"
 using namespace std;
 
-typedef enum {
-  CHARACTER_INPUT,
-  CHAR_SET_INPUT,
-  STRING_INPUT,
-  CARET_INPUT,
-  DOLLAR_INPUT,
-  EPSILON,
-  EMPTY
-} TransitionType;
-
-struct Transition
+struct Path
 {
-  TransitionType type;
-  char character;
-  CharSet *char_set;
-  RegexString *regex_str;
-
-  string get_substring();
-  void print();
+  vector <unsigned int> states;
+  vector <Transition> transitions;
 };
 
 
-#endif // TRANSITION_H
+#endif // PATH_H

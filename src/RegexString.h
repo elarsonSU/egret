@@ -1,4 +1,4 @@
-/*  State.cpp: a state in an NFA and a path
+/*  RegexString.h: represents a regex string
 
     Copyright (C) 2016  Eric Larson and Anna Kirk
     elarson@seattleu.edu
@@ -19,22 +19,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include "State.h"
+#ifndef REGEX_STRING_H
+#define REGEX_STRING_H
 
+#include <set>
 using namespace std;
 
-void
-State::print()
+struct RegexString
 {
-  if (end_repeat_state) {
-    cout << "REPEAT END {" << repeat_lower << "," << repeat_upper
-         << "} (BEGIN: " << begin_index << ")";
-  }
-  else if (end_charset_state) {
-    cout << "CHAR SET END (BEGIN: " << begin_index << ")";
-  }
-  else {
-    cout << "NORMAL";
-  }
-}
+  CharSet *char_set;		// corresponding character set
+  int repeat_lower;     	// lower bound for string
+  int repeat_upper;     	// upper bound for string
+
+  // traversal info
+  int path_index;               // path that contains the char set
+  string path_prefix;           // path string up to visiting this node
+  string substring;             // substring corresponding to this string
+};
+
+#endif // REGEX_STRING_H
+

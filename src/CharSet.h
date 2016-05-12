@@ -46,6 +46,11 @@ struct CharSet
   vector <CharSetItem> items;	// set of items comprising the set
   bool complement;		// true if set is complemented
 
+  // traversal info
+  int path_index;		// path that contains the char set
+  string path_prefix;		// path string up to visiting this node
+  string substring;		// substring corresponding to this char set
+
   // constructor
   CharSet() { complement = false; }
 

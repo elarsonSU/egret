@@ -28,16 +28,21 @@
 #include <vector>
 #include <map>
 #include <set>
-#include "State.h"
 #include "Transition.h"
 #include "CharSet.h"
+#include "RegexLoop.h"
+#include "RegexString.h"
 #include "ParseTree.h"
 #include "Stats.h"
 
 using namespace std;
 
+class TestGenerator;
+
 class NFA
 {
+  friend class TestGenerator;
+
 public:
 
   // constructors
@@ -49,8 +54,8 @@ public:
   // Build an NFA from a parse tree.
   void init(ParseTree &tree);
 
-  // Find all paths through NFA.
-  vector <string> nfa_traverse();
+  // Create the basis paths
+  vector <Path> find_basis_paths();
 
   // Print out the NFA.
   void print();
@@ -64,21 +69,9 @@ private:
   unsigned int initial;			// initial state
   unsigned int final;			// final state
   vector <vector <Transition> > trans_table;	// transition table
-  vector <State> states;		// list of states  
-  set<char> punct_marks;		// set of punctuation marks
-  vector <vector <unsigned int> > paths;	// list of paths
-  vector <string> path_strings;		// list of paths strings
-  vector <unsigned int> end_states;	// list of end states that need further attention
-  vector <string> test_strings;		// list of test strings
+  vector <RegexLoop> loops;		// list of repeat quantifiers
+  unsigned int path_count;		// number of paths
   
-  // variables for processing carets and dollars
-  bool all_start_with_caret;
-  bool all_end_with_dollar;
-  bool warn_caret_middle;
-  bool warn_dollar_middle;
-  bool warn_caret_start;
-  bool warn_dollar_end;
-
   //
   // HELPER NFA BUILDING FUNCTIONS
   //
@@ -132,27 +125,8 @@ private:
   // Returns true if repeat quantifier represents a string
   bool is_regex_string(ParseNode *node, int repeat_lower, int repeat_upper);
 
-  // HELPER NFA TRAVERSAL FUNCTIONS
-  //
-
-  // Utility function to find all paths through the NFA.
-  void find_all_paths(unsigned int curr_state, vector <unsigned int> path);
-  
-  // Determines if the path should be added to the list of paths.  If so, a path
-  // string is generated for that path.
-  void process_path(vector <unsigned int> path);
-
-  // Initialize set of strings by copying path strings, removing duplicates.
-  void init_test_strings();
-
-  // Adds a string to test string vector (unless it is already there).
-  void add_to_test_strings(string s);
-
-  // Generate additional strings by visiting end nodes.
-  void visit_end_nodes();
-
-  // Process loop constructs by adding one less and one more iteration.
-  void process_test_string_loop(State state, bool skip_one_less = false, bool skip_one_more = false);
+  // Utility function to find all paths through the NFA
+  traverse(unsigned int curr_state, Path path, vector <Path> &paths, bool *visited);
 
 };
 
