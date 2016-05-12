@@ -1,4 +1,5 @@
-# EGRET
+EGRET
+=====
 Evil generation of regular expression test strings
 
 Licensing and copying information:
@@ -16,33 +17,31 @@ Python 2.x versions will not work.
 Setup directions:
 -----------------
 
-1. Execute: cd src
+1. Execute: `cd src`
 
-2. You may need to modify these Makefile variables:
-CXX      := g++
-PYTHON   := python3
-EXT_PATH := build/lib.linux-x86_64-3.4
-EXT_LIB  := egret_ext.cpython-34m.so
+2. You may need to modify these Makefile variables:  
+`CXX      := g++`  
+`PYTHON   := python3`  
+`EXT_PATH := build/lib.linux-x86_64-3.4`  
+`EXT_LIB  := egret_ext.cpython-34m.so`  
 
-The latter two variables refer to the location and name of a library that is created.
+  The latter two variables refer to the location and name of a library that is created.
 The library contains C++ code but is used as a Python module. The precise name of the
 path and library may vary. To find out the name, simply make the project once and then
 analyze the build subdirectory that is created.
  
-3. Execute: make
+3. Execute: `make`
 
-4. Execute: cd ..
+4. Execute: `cd ..`
 
-5. You should see the library (the egret_ext .so file) in this directory.
-
-6. Edit the first line of egret.py to refer to your python3 location.
+5. You should see the library (the `egret_ext.cpython-34m.so` or similar file) in this directory.
 
 Running:
 --------
-Simply run 'egret.py'.  It will prompt for a regular expression and then generate
+Simply run `python3 egret.py`.  It will prompt for a regular expression and then generate
 test strings.
 
-The script also some command line options.  To see a list, execute: egret.py -h
+The script also some command line options.  To see a list, execute: `python3 egret.py -h`
 
 Acknowledgments:
 ----------------
