@@ -1,5 +1,3 @@
-#!/usr/local/bin/python3
-
 # egret.py: Command line interface for EGRET
 #
 # Copyright (C) 2016  Eric Larson and Anna Kirk
