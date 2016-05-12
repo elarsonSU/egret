@@ -1,2 +1,2 @@
 # egret
-Evil generation of regular expression test string
+Evil generation of regular expression test strings
