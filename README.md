@@ -1,4 +1,4 @@
-# egret
+# EGRET
 Evil generation of regular expression test strings
 
 Licensing and copying information:
