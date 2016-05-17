@@ -29,6 +29,7 @@ import egret_api
 session = []
 allPass = []
 allFail = []
+allWarnings = []
 
 # configuration
 DEBUG = True
@@ -58,6 +59,9 @@ def process_submit():
         allPass.append(item)
     for item in failList:
         allFail.append(item)
+    if warnings:
+        for item in warnings:
+            allWarnings.append(item)
         
 
     # get group information
@@ -76,6 +80,8 @@ def process_submit():
         allFail[:] = []
         for item in failList:
             allFail.append(item)
+        for item in warnings:
+            allWarnings.append(warnings)
     
     # determine if test string is accepted or not
     if testString != None and testString != '' and errorMsg == None:
@@ -88,7 +94,8 @@ def process_submit():
             regex=regex, testString=testString, showGroups=showGroups,
             passList=passList, failList=failList, errorMsg=errorMsg, warnings=warnings,
             groupHdr=groupHdr, groupRows=groupRows, numGroups=numGroups,
-            testResult=testResult, session=session, allPass=allPass, allFail=allFail)
+            testResult=testResult, session=session, allPass=allPass, allFail=allFail,
+            allWarnings=allWarnings)
          
     # strings to test with
     # \b\d{3}[-.]?\d{3}[-.]?\d{4}\b phone numbers

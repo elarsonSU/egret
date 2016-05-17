@@ -23,11 +23,11 @@
     </div>
   </div>
 
-  {% if warnings %}
+  {% if allWarnings %}
   <div class="alert alert-warning">
     <strong>Warnings:</strong>
     <ul>
-      {% for warning in warnings %}
+      {% for warning in allWarnings %}
       <li> {{ warning }} </li>
       {% endfor %}
     </ul>
