@@ -21,7 +21,7 @@
 
 # all the imports
 import sqlite3
-from flask import Flask, request, url_for, render_template, flash
+from flask import Flask, request, url_for, render_template, flash, Response
 from contextlib import closing
 import egret_api
 
@@ -80,8 +80,9 @@ def process_submit():
         allFail[:] = []
         for item in failList:
             allFail.append(item)
-        for item in warnings:
-            allWarnings.append(warnings)
+        if warnings:
+            for item in warnings:
+                allWarnings.append(warnings)
     
     # determine if test string is accepted or not
     if testString != None and testString != '' and errorMsg == None:
@@ -96,10 +97,26 @@ def process_submit():
             groupHdr=groupHdr, groupRows=groupRows, numGroups=numGroups,
             testResult=testResult, session=session, allPass=allPass, allFail=allFail,
             allWarnings=allWarnings)
+
+@app.route('/download')
+def download_file():
+    data = []
+    for item in session:
+        data.append(item + '\n')
+
+    return Response(data,
+                       mimetype="text/plain",
+                       headers={"Content-Disposition":
+                                    "attachment;filename=session.txt"})
+
+@app.route('/clear')
+def clear():
+    session = []
+    return render_template('egret.html')
          
-    # strings to test with
-    # \b\d{3}[-.]?\d{3}[-.]?\d{4}\b phone numbers
-    # (?:#|0x)?(?:[0-9A-F]{2}){3,4} numbers
+# strings to test with
+# \b\d{3}[-.]?\d{3}[-.]?\d{4}\b phone numbers
+# (?:#|0x)?(?:[0-9A-F]{2}){3,4} numbers
             
 if __name__ == '__main__':
     # app.run()
