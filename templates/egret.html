@@ -16,7 +16,7 @@
 <div class="container" style="margin-top:10px">
   <div class="panel panel-primary">
     <div class="panel-heading">
-      <h1>EGRET</h1>
+      <h1>EGRET- testing</h1>
     </div>
     <div class="panel-body">
       Evil Generation of Regular Expression Tests
@@ -44,7 +44,17 @@
 
       <div class="panel-heading">
         <h2 class="panel-title">Enter regular expression</h2>
+        {% if session %}
+        <br>
+        <h2 class = "panel-title">Currently in session:</h2>
+        <ul>
+          {% for item in session %}
+          <li> {{ item }} </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
       </div>
+      
 
       <div class="panel-body">
         <input class="form-control" type="text" name="regex" value="{{ regex }}"
@@ -56,6 +66,10 @@
         <input type="checkbox" name="showGroups"/>
         {% endif %}
         Show groups for accepted strings
+	<br>
+	<br>
+        <input type="checkbox" name="clearSession"/>
+        Clear session
 	<br>
 	<br>
         <input class="btn btn-primary" type=submit value=Submit>
@@ -124,7 +138,7 @@
 
       {% else %}
       <font face="Courier New, Courier, monospace">
-        {% for item in passList %}
+        {% for item in allPass %}
         {{ item }}<br>
         {% endfor %}
       </font>

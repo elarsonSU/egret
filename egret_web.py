@@ -25,6 +25,11 @@ from flask import Flask, request, url_for, render_template, flash
 from contextlib import closing
 import egret_api
 
+# global variables (for sessions)
+session = []
+allPass = []
+allFail = []
+
 # configuration
 DEBUG = True
 
@@ -37,34 +42,58 @@ def process_submit():
     regex = request.args.get('regex')
     testString = request.args.get('testString')
     showGroups = request.args.get('showGroups')
+    clearSession = request.args.get('clearSession')
 
     # empty regex --> return empty results
     if regex == None or regex == '':
         return render_template('egret.html',
                 testString=testString, showGroups=showGroups)
-
+    
+    # add regex to session
+    session.append(regex)
+    
     # run egret engine
     (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex)
+    for item in passList:
+        allPass.append(item)
+    for item in failList:
+        allFail.append(item)
+        
 
     # get group information
     if showGroups == "on" and errorMsg == None:
         (groupHdr, groupRows, numGroups) = egret_api.get_group_info(regex, passList)
     else:
         groupHdr = groupRows = numGroups = None
-           
+    
+    # get session information
+    if clearSession == "on" and errorMsg == None:
+        session[:] = []
+        session.append(regex)
+        allPass[:] = []
+        for item in passList:
+            allPass.append(item)
+        allFail[:] = []
+        for item in failList:
+            allFail.append(item)
+    
     # determine if test string is accepted or not
     if testString != None and testString != '' and errorMsg == None:
         testResult = egret_api.run_test_string(regex, testString)
     else:
         testResult = ''
-
-    # render webpage
+   
+    # render webpage with current session
     return render_template('egret.html',
             regex=regex, testString=testString, showGroups=showGroups,
             passList=passList, failList=failList, errorMsg=errorMsg, warnings=warnings,
             groupHdr=groupHdr, groupRows=groupRows, numGroups=numGroups,
-            testResult=testResult)
+            testResult=testResult, session=session, allPass=allPass, allFail=allFail)
+         
+    # strings to test with
+    # \b\d{3}[-.]?\d{3}[-.]?\d{4}\b phone numbers
+    # (?:#|0x)?(?:[0-9A-F]{2}){3,4} numbers
             
 if __name__ == '__main__':
-    app.run()
-
+    # app.run()
+    app.run(host="0.0.0.0",port=8080) # for my dev environment
