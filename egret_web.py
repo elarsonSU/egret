@@ -20,10 +20,12 @@
 
 
 # all the imports
+import os
 import sqlite3
-from flask import Flask, request, url_for, render_template, flash, Response
+from flask import Flask, request, url_for, render_template, flash, Response, redirect
 from contextlib import closing
 import egret_api
+from werkzeug import secure_filename
 
 # global variables (for sessions)
 session = [] # Holds all of the strings currently being tested against the regex
@@ -32,17 +34,29 @@ allFail = [] # Currently failing strings from session
 
 # configuration
 DEBUG = True
+UPLOAD_FOLDER = '/tmp/'
+ALLOWED_EXTENSIONS = set(['txt'])
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 # create our application
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-@app.route('/', methods=['GET'])
+@app.route('/', methods=['GET', 'POST'])
 def process_submit():
     regex = request.args.get('regex')
     testString = request.args.get('testString')
     showGroups = request.args.get('showGroups')
     sessionBox = request.args.get('sessionBox')
+    upload = request.args.get('upload') 
+    
+    if upload:
+        uploadedStrings = upload.splitlines()
+        for item in uploadedStrings:
+            session.append(item)
 
     # empty regex --> return empty results
     if regex == None or regex == '':
@@ -115,6 +129,10 @@ def download_file():
                     headers={"Content-Disposition":
                             "attachment;filename=session.txt"})
 
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_file():
+    return render_template('upload.html')
+   
 @app.route('/clear')
 def clear():
     session[:] = []
