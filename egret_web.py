@@ -77,8 +77,6 @@ def process_submit():
             if item not in session: # avoids duplicates
                 session.append(item)
     
-        
-
     # get group information
     if showGroups == "on" and errorMsg == None:
         (groupHdr, groupRows, numGroups) = egret_api.get_group_info(regex, passList)
@@ -110,7 +108,6 @@ def process_submit():
         else:
             allFail.append(item)
     
-   
     # render webpage with current session
     return render_template('egret.html',
             regex=regex, testString=testString, showGroups=showGroups,
