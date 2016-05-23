@@ -23,11 +23,11 @@
     </div>
   </div>
 
-  {% if allWarnings %}
+  {% if warnings %}
   <div class="alert alert-warning">
     <strong>Warnings:</strong>
     <ul>
-      {% for warning in allWarnings %}
+      {% for warning in warnings %}
       <li> {{ warning }} </li>
       {% endfor %}
     </ul>
@@ -37,25 +37,14 @@
   {% if errorMsg %}
   <p class="alert alert-danger"><strong>{{ errorMsg }}</strong>
   {% endif %}
-  
-  
+
   <form action="{{ url_for('process_submit') }}" method=get>
 
     <div class="panel panel-info">
 
       <div class="panel-heading">
         <h2 class="panel-title">Enter regular expression</h2>
-        <!--{% if session %}-->
-        <!--<br>-->
-        <!--<h2 class = "panel-title">Expressions being tested:</h2>-->
-        <!--<ul>-->
-        <!--  {% for item in session %}-->
-        <!--  <li> {{ item }} </li>-->
-        <!--  {% endfor %}-->
-        <!--</ul>-->
-        <!--{% endif %}-->
       </div>
-      
 
       <div class="panel-body">
         <input class="form-control" type="text" name="regex" value="{{ regex }}"
@@ -73,23 +62,6 @@
       </div>
 
     </div>
-    
-    {% if session %}
-    <div class="panel panel-info">
-      <div class="panel-heading">
-        <h2 class="panel-title">Expressions being tested:</h2>
-      </div>
-      <div class = "panel-body">
-        <ul>
-          {% for item in session %}
-          <li> {{ item }} </li>
-          {% endfor %}
-        </ul>
-        <a href="/clear" class="btn btn-primary">Clear session</a>
-        <a href="/download" class="btn btn-primary">Download session (.txt)</a>
-      </div>
-    </div>
-    {% endif %}
 
     <div class="panel panel-info">
 
@@ -152,7 +124,7 @@
 
       {% else %}
       <font face="Courier New, Courier, monospace">
-        {% for item in allPass %}
+        {% for item in passList %}
         {{ item }}<br>
         {% endfor %}
       </font>

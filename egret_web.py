@@ -27,9 +27,10 @@ import egret_api
 
 # global variables (for sessions)
 session = []
-allPass = []
-allFail = []
-allWarnings = []
+# allPass = []
+# allFail = []
+# allWarnings = []
+testStrings = []
 
 # configuration
 DEBUG = True
@@ -56,13 +57,11 @@ def process_submit():
     # run egret engine
     (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex)
     for item in passList:
-        allPass.append(item)
+        testStrings.append(item)
     for item in failList:
-        allFail.append(item)
-    if warnings:
-        for item in warnings:
-            allWarnings.append(item)
+        testStrings.append(item)
         
+    print(testStrings)
 
     # get group information
     if showGroups == "on" and errorMsg == None:
@@ -70,19 +69,6 @@ def process_submit():
     else:
         groupHdr = groupRows = numGroups = None
     
-    # # get session information
-    # if clearSession == "on" and errorMsg == None:
-    #     session[:] = []
-    #     session.append(regex)
-    #     allPass[:] = []
-    #     for item in passList:
-    #         allPass.append(item)
-    #     allFail[:] = []
-    #     for item in failList:
-    #         allFail.append(item)
-    #     if warnings:
-    #         for item in warnings:
-    #             allWarnings.append(warnings)
     
     # determine if test string is accepted or not
     if testString != None and testString != '' and errorMsg == None:
@@ -95,8 +81,7 @@ def process_submit():
             regex=regex, testString=testString, showGroups=showGroups,
             passList=passList, failList=failList, errorMsg=errorMsg, warnings=warnings,
             groupHdr=groupHdr, groupRows=groupRows, numGroups=numGroups,
-            testResult=testResult, session=session, allPass=allPass, allFail=allFail,
-            allWarnings=allWarnings)
+            testResult=testResult)
 
 @app.route('/download')
 def download_file():
@@ -111,10 +96,7 @@ def download_file():
 
 @app.route('/clear')
 def clear():
-    session[:] = []
-    allPass[:] = []
-    allFail[:] = []
-    allWarnings[:] = []
+    testStrings[:] = []
     return render_template('egret.html')
 
 # strings to test with
