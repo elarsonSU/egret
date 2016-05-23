@@ -1,5 +1,5 @@
 Web Interface:
-- Add ability to save tests for future runs (and clear this) [DONE]
+- Add ability to save tests for future runs (and clear this)
 - Add ability to load tests (sessions) from a plaintext file
 - Add tracking capabilities
 - Generate regular expressions from examples or wizard

@@ -26,11 +26,9 @@ from contextlib import closing
 import egret_api
 
 # global variables (for sessions)
-session = []
-# allPass = []
-# allFail = []
-# allWarnings = []
-testStrings = []
+session = [] # Holds all of the strings currently being tested against the regex
+allPass = [] # Currently passing strings from session
+allFail = [] # Currently failing strings from session
 
 # configuration
 DEBUG = True
@@ -44,24 +42,28 @@ def process_submit():
     regex = request.args.get('regex')
     testString = request.args.get('testString')
     showGroups = request.args.get('showGroups')
-    clearSession = request.args.get('clearSession')
+    sessionBox = request.args.get('sessionBox')
 
     # empty regex --> return empty results
     if regex == None or regex == '':
         return render_template('egret.html',
-                testString=testString, showGroups=showGroups)
-    
-    # add regex to session
-    session.append(regex)
+                testString=testString, showGroups=showGroups, session=session, sessionBox=sessionBox)
     
     # run egret engine
     (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex)
-    for item in passList:
-        testStrings.append(item)
-    for item in failList:
-        testStrings.append(item)
+    
+    
+    # add passing/failing strings to session if they aren't already,
+    # and if user wants them to be added
+    if sessionBox != "on":
+        for item in passList:
+            if item not in session: # avoids duplicates
+                session.append(item)
+        for item in failList:
+            if item not in session: # avoids duplicates
+                session.append(item)
+    
         
-    print(testStrings)
 
     # get group information
     if showGroups == "on" and errorMsg == None:
@@ -75,13 +77,32 @@ def process_submit():
         testResult = egret_api.run_test_string(regex, testString)
     else:
         testResult = ''
+        
+    # clear previous results
+    allPass[:] = []
+    allFail[:] = []
+    
+    # if not adding to session, still need to test these strings
+    if sessionBox == "on":
+        for item in passList:
+            allPass.append(item)
+        for item in failList:
+            allFail.append(item)
+        
+    # retest each string
+    for item in session:
+        if egret_api.run_test_string(regex, item) == "ACCEPTED":
+            allPass.append(item)
+        else:
+            allFail.append(item)
+    
    
     # render webpage with current session
     return render_template('egret.html',
             regex=regex, testString=testString, showGroups=showGroups,
             passList=passList, failList=failList, errorMsg=errorMsg, warnings=warnings,
             groupHdr=groupHdr, groupRows=groupRows, numGroups=numGroups,
-            testResult=testResult)
+            testResult=testResult, sessionBox=sessionBox, session=session, allPass=allPass, allFail=allFail)
 
 @app.route('/download')
 def download_file():
@@ -96,7 +117,7 @@ def download_file():
 
 @app.route('/clear')
 def clear():
-    testStrings[:] = []
+    session[:] = []
     return render_template('egret.html')
 
 # strings to test with
