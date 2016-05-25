@@ -58,9 +58,33 @@
         Show groups for accepted strings
 	<br>
 	<br>
+	      {% if sessionBox %}
+	<input type="checkbox" name="sessionBox" checked/>
+        {% else %}
+        <input type="checkbox" name="sessionBox"/>
+        {% endif %}
+        Don't add this expression's strings to current session
+	<br>
+	<br>
         <input class="btn btn-primary" type=submit value=Submit>
       </div>
 
+    </div>
+    
+    <div class="panel panel-info">
+      <div class="panel-heading">
+        <h2 class="panel-title">Strings in current session:</h2>
+      </div>
+      <div class = "panel-body">
+        <ul>
+          {% for item in session %}
+          <li> {{ item }} </li>
+          {% endfor %}
+        </ul>
+        <a href="/clear" class="btn btn-primary">Clear session</a>
+        <a href="/download" class="btn btn-primary">Download session (.txt)</a>
+        <a href="/upload" class="btn btn-primary">Upload session</a>
+      </div>
     </div>
 
     <div class="panel panel-info">
@@ -124,7 +148,7 @@
 
       {% else %}
       <font face="Courier New, Courier, monospace">
-        {% for item in passList %}
+        {% for item in allPass %}
         {{ item }}<br>
         {% endfor %}
       </font>
@@ -142,7 +166,7 @@
 
     <div class="panel-body">
       <font face="Courier New, Courier, monospace">
-        {% for item in failList %}
+        {% for item in allFail %}
         {{ item }}<br>
         {% endfor %}
       </font>
