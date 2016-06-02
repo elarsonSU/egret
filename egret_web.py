@@ -30,6 +30,7 @@ import egret_api
 session = [] # Holds all of the strings currently being tested against the regex
 allPass = [] # Currently passing strings from session
 allFail = [] # Currently failing strings from session
+current = [] # Holds all strings from last tested regex
 
 # configuration
 DEBUG = True
@@ -43,7 +44,6 @@ def process_submit():
     regex = request.args.get('regex')
     testString = request.args.get('testString')
     showGroups = request.args.get('showGroups')
-    sessionBox = request.args.get('sessionBox')
     upload = request.args.get('upload') 
     
     if upload:
@@ -54,7 +54,7 @@ def process_submit():
     # empty regex --> return empty results
     if regex == None or regex == '':
         return render_template('egret.html',
-                testString=testString, showGroups=showGroups, session=session, sessionBox=sessionBox)
+                testString=testString, showGroups=showGroups, session=session)
     
     # run egret engine
     (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex)
@@ -90,9 +90,11 @@ def process_submit():
     for item in passList:
         if item not in allPass:
             allPass.append(item)
+            current.append(item)
     for item in failList:
         if item not in allFail:
             allFail.append(item)    
+            current.append(item)
 
     # retest each string
     for item in session:
@@ -109,7 +111,7 @@ def process_submit():
             regex=regex, testString=testString, showGroups=showGroups,
             passList=passList, failList=failList, errorMsg=errorMsg, warnings=warnings,
             groupHdr=groupHdr, groupRows=groupRows, numGroups=numGroups,
-            testResult=testResult, sessionBox=sessionBox, session=session, allPass=allPass, allFail=allFail)
+            testResult=testResult, session=session, allPass=allPass, allFail=allFail)
 
 @app.route('/download')
 def download_file():
@@ -131,15 +133,21 @@ def clear():
     session[:] = []
     return render_template('egret.html')
 
-@app.route('/save')
+@app.route('/save', methods=["GET", "POST"])
 def save():
-    strings = request.args.getlist("save")
-    print(strings)
+    strings = []
+    submit = request.args.get('submit')
+    if submit == "Save selected strings":
+        strings = request.args.getlist("save")
+    else:
+        strings = current
+        
     for item in strings:
         if item not in session:
             session.append(item)
     return render_template('egret.html', session=session, allPass=allPass, allFail=allFail)
-
+    
+    
 # strings to test with
 # \b\d{3}[-.]?\d{3}[-.]?\d{4}\b phone numbers
 # (?:#|0x)?(?:[0-9A-F]{2}){3,4} colors
