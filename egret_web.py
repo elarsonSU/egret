@@ -46,6 +46,7 @@ def process_submit():
     showGroups = request.args.get('showGroups')
     upload = request.args.get('upload') 
     
+    # uploads strings to session
     if upload:
         uploadedStrings = upload.splitlines()
         for item in uploadedStrings:
@@ -58,17 +59,6 @@ def process_submit():
     
     # run egret engine
     (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex)
-    
-    
-    # add passing/failing strings to session if they aren't already,
-    # and if user wants them to be added
-    # if sessionBox != "on":
-    #     for item in passList:
-    #         if item not in session: # avoids duplicates
-    #             session.append(item)
-    #     for item in failList:
-    #         if item not in session: # avoids duplicates
-    #             session.append(item)
     
     # get group information
     if showGroups == "on" and errorMsg == None:
@@ -86,7 +76,9 @@ def process_submit():
     # clear previous results
     allPass[:] = []
     allFail[:] = []
-        
+    current[:] = []
+    
+    # add items to allpass, allfail, and current if they aren't already    
     for item in passList:
         if item not in allPass:
             allPass.append(item)
@@ -102,9 +94,6 @@ def process_submit():
             allPass.append(item)
         else:
             allFail.append(item)
-    
-    # clear session
-    # session[:] = []
     
     # render webpage with current session
     return render_template('egret.html',
@@ -149,10 +138,10 @@ def save():
     return render_template('egret.html', session=session, allPass=allPass, allFail=allFail)
     
     
-# strings to test with
-# \b\d{3}[-.]?\d{3}[-.]?\d{4}\b phone numbers
-# (?:#|0x)?(?:[0-9A-F]{2}){3,4} colors
-# (IMG\d+)\.png                 names + .png (useful for testing groups)
+# Some sample test strings
+# \b\d{3}[-.]?\d{3}[-.]?\d{4}\b   phone numbers
+# (?:#|0x)?(?:[0-9A-F]{2}){3,4}   colors
+# (IMG\d+)\.png                   names + .png (useful for testing groups)
             
 if __name__ == '__main__':
     # app.run() # for default host/port
