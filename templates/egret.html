@@ -130,6 +130,11 @@
 	  {% for item in row %}
 	  <td> 
             <font face="Courier New, Courier, monospace"> {{ item }} </font>
+            {% if item not in session %}
+            {% if loop.index == 1 %}
+            <input type=checkbox name=save value="{{ item }}">
+            {% endif %}
+            {% endif %}
 	  </td>
 	  {% endfor %}
 	  </font>

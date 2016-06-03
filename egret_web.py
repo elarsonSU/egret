@@ -131,6 +131,7 @@ def upload_file():
 @app.route('/clear')
 def clear():
     session[:] = []
+    current[:] = []
     return render_template('egret.html')
 
 @app.route('/save', methods=["GET", "POST"])
@@ -151,6 +152,7 @@ def save():
 # strings to test with
 # \b\d{3}[-.]?\d{3}[-.]?\d{4}\b phone numbers
 # (?:#|0x)?(?:[0-9A-F]{2}){3,4} colors
+# (IMG\d+)\.png                 names + .png (useful for testing groups)
             
 if __name__ == '__main__':
     # app.run() # for default host/port
