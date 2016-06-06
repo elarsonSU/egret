@@ -22,14 +22,50 @@
 #ifndef PATH_H
 #define PATH_H
 
-#include "CharSet.h"
+#include <set>
+#include <string>
+#include <vector>
+#include "Edge.h"
 using namespace std;
 
-struct Path
-{
-  vector <unsigned int> states;
-  vector <Transition> transitions;
-};
+class Path {
 
+public:
+
+  Path() {}
+  Path(unsigned int initial) { states.push_back(initial); }
+
+  // adds an edge and the destination state to the path 
+  void append(Edge *edge, unsigned int state);
+
+  // removes the last edge and state
+  void remove_last();
+
+  // marks the states in the path as visited
+  void mark_path_visited(bool *visited);
+
+  // generates the initial test string for the path
+  string gen_initial_string(string base_substring);
+
+  // returns true if path has a leading caret
+  bool has_leading_caret();
+
+  // returns true if path has a trailing dollar
+  bool has_trailing_dollar();
+
+  // returns an error message if there is an anchor (^ or $) in the
+  // middle of the path, returns an empty string otherwise
+  string check_anchor_middle();
+
+  // generates evil strings for the path
+  set <string> gen_evil_strings(const set <char> &punct_marks);
+
+private:
+
+  vector <unsigned int> states;		// list of states
+  vector <Edge *> edges;		// list of edges
+  vector <unsigned int> evil_edges;	// list of evil edges that need processing
+  string path_string;			// test string associated with path
+};
 
 #endif // PATH_H

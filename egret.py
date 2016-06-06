@@ -58,6 +58,8 @@ def get_group_info(regexStr, testStrings):
 parser = OptionParser()
 parser.add_option("-f", "--file", dest = "fileName", help = "file containing regex")
 parser.add_option("-r", "--regex", dest = "regex", help = "regular expression")
+parser.add_option("-b", "--base_substring", dest = "baseSubstring",
+    default = "evil", help = "base substring for regex strings")
 parser.add_option("-o", "--output_file", dest = "outputFile", help = "output file name")
 parser.add_option("-d", "--debug", action = "store_true", dest = "debugMode",
     default = False, help = "display debug info")
@@ -89,7 +91,7 @@ else:
 
 # execute regex-test
 #start_time = time.process_time()
-inputStrs = egret_ext.run(regexStr, opts.debugMode, opts.statMode)
+inputStrs = egret_ext.run(regexStr, opts.baseSubstring, opts.debugMode, opts.statMode)
 status = inputStrs[0]
 inputStrs = inputStrs[1:]
 hasError = (status[0:5] == "ERROR")

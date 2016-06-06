@@ -23,16 +23,34 @@
 #define REGEX_STRING_H
 
 #include <set>
+#include <string>
+#include "CharSet.h"
 using namespace std;
 
-struct RegexString
-{
+class RegexString {
+
+public:
+
+  RegexString(CharSet *c, int lower, int upper) {
+    char_set = c;
+    repeat_lower = lower;
+    repeat_upper = upper;
+  }
+
+  void set_path_prefix(string p) { path_prefix = p; }
+  void set_substring(string s) { substring = s; }
+  string get_substring() { return substring; }
+
+  // generate evil strings
+  set <string> gen_evil_strings(string path_string, const set <char> &punct_marks);
+
+  // print the regex string
+  void print();
+
+private:
   CharSet *char_set;		// corresponding character set
   int repeat_lower;     	// lower bound for string
   int repeat_upper;     	// upper bound for string
-
-  // traversal info
-  int path_index;               // path that contains the char set
   string path_prefix;           // path string up to visiting this node
   string substring;             // substring corresponding to this string
 };

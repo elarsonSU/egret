@@ -31,13 +31,14 @@ void addWarning(string message);
 string getWarnings();
 
 // Egret Exception
-class EgretException
-{
-  private:
-    string errorMsg;
-  public:
-    EgretException(string msg) { errorMsg = msg; }
-    string getError() const { return errorMsg; }
+class EgretException {
+
+public:
+  EgretException(string msg) { errorMsg = msg; }
+  string getError() const { return errorMsg; }
+
+private:
+  string errorMsg;
 };
 
 #endif // ERROR_H

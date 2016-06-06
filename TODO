@@ -7,13 +7,11 @@ Command Line Interface:
 - Add exception handling to catch re.compile errors.
 
 Refactoring:
-- punct_marks being passed along?
-- possibly generate the character set sooner
-- make CharSet a class with public and private sections
-- traversal and subsequent processing (process_path) is inefficient and messy
+- convert key structs into classes with public and private sections
 
 Enhancements:
 - Better duplicated character sets in character set warnings.
+- Add errors for carets and dollars inside loops such (^abc)+
 - Category for alphanumeric strings with some acceptable punctuation that permits only punctuation. 
 - String where all optional items (? and *) are not selected.
   * Misses single period on \d*\.\d*

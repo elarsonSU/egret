@@ -23,20 +23,41 @@
 #define REGEX_LOOP_H
 
 #include <set>
+#include <string>
 using namespace std;
 
-struct RegexLoop
-{
-  int begin_state;		// Beginning state
-  int end_state;		// Ending state
-  int repeat_lower;     	// Lower bound for repeat quantifiers 
-  int repeat_upper;     	// Upper bound for repeat quantifiers (-1 if no bound)
+class RegexLoop {
 
-  // traversal info
-  int path_index;               // path that contains the char set
+public:
+
+  RegexLoop(int lower, int upper) {
+    repeat_lower = lower;
+    repeat_upper = upper;
+  }
+
+  // get substring - additional iterations for lower bounds greater than 1
+  string get_substring();
+
+  // process begin loop edge
+  void process_begin_loop(string prefix, bool processed);
+
+  // process end loop edge
+  void process_end_loop(string prefix, bool processed);
+
+  // generate evil strings
+  set <string> gen_evil_strings(string path_string);
+
+  // print the regex loop
+  void print();
+
+private:
+
+  int repeat_lower;     	// lower bound for repeat quantifiers 
+  int repeat_upper;     	// upper bound for repeat quantifiers (-1 if no bound)
   string path_prefix;           // path string up to visiting this node
-  string substring;             // substring corresponding to this string
-
+  string path_substring;        // substring corresponding to this string
+  string curr_prefix;           // current path string up to visiting this node
+  string curr_substring;        // current substring corresponding to this string
 };
 
 #endif // REGEX_LOOP_H

@@ -22,28 +22,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <cstdlib>
 #include <cassert>
+#include <iostream>
 #include <vector>
-#include <set>
-#include <map>
-#include <algorithm>
-
+#include "Edge.h"
 #include "NFA.h"
-#include "Transition.h"
 #include "ParseTree.h"
 #include "error.h"
-
 using namespace std;
 
-// constants
-static const Transition EPSILON_TRANS = { EPSILON, '\0' };
-static const Transition EMPTY_TRANS = { EMPTY };
+static Edge EPSILON = Edge(EPSILON_EDGE);
 
-// constructor
 NFA::NFA(unsigned int _size, unsigned int _initial, unsigned int  _final)
 {
   size = _size;
@@ -53,24 +42,21 @@ NFA::NFA(unsigned int _size, unsigned int _initial, unsigned int  _final)
   assert(initial < size);
   assert(final < size);
 
-  // Initialize trans_table with an "empty graph" (no transitions)
-  vector <Transition> empty_row(size, EMPTY_TRANS);
+  // initialize edge table with an "empty graph"
+  vector <Edge *> empty_row(size, NULL);
   for (unsigned int i = 0; i < size; i++) {
-    trans_table.push_back(empty_row);
+    edge_table.push_back(empty_row);
   }
 }
 
-// copy constructor
 NFA::NFA(const NFA &other)
 {
   size = other.size;
   initial = other.initial;
   final = other.final;
-  trans_table = other.trans_table;
-  loops = other.loops;
+  edge_table = other.edge_table;
 }
 
-// overloaded assignment operator
 NFA &
 NFA::operator=(const NFA & other)
 {
@@ -80,26 +66,14 @@ NFA::operator=(const NFA & other)
   initial = other.initial;
   final = other.final;
   size = other.size;
-  trans_table = other.trans_table;
-  loops = other.loops;
+  edge_table = other.edge_table;
 
   return *this;
 }
 
-//
-// NFA BUILDING FUNCTIONS
-//
-// Using Thompson Construction, build NFAs from basic inputs or
-// compositions of other NFAs.
-//
-
-// Initialize an NFA using a parse tree.
 void
-NFA::init(ParseTree &tree)
+NFA::build(ParseTree &tree)
 {
-  // Initialize members
-  punct_marks = tree.get_punct_marks();
-
   // Build NFA
   NFA nfa = build_nfa_from_tree(tree.get_root());
 
@@ -107,13 +81,9 @@ NFA::init(ParseTree &tree)
   initial = nfa.initial;
   final = nfa.final;
   size = nfa.size;
-  trans_table = nfa.trans_table;
-  loops = nfa.loops;
+  edge_table = nfa.edge_table;
 }
 
-//
-// Builds an NFA from tree
-//
 NFA
 NFA::build_nfa_from_tree(ParseNode *tree)
 {
@@ -130,11 +100,9 @@ NFA::build_nfa_from_tree(ParseNode *tree)
 	build_nfa_from_tree(tree->right));
 
   case REPEAT_NODE:
-#if 0
     if (is_regex_string(tree->left, tree->repeat_lower, tree->repeat_upper))
       return build_nfa_string(tree->left, tree->repeat_lower, tree->repeat_upper);
     else
-#endif
       return build_nfa_repeat(build_nfa_from_tree(tree->left),
 	tree->repeat_lower, tree->repeat_upper);
 
@@ -161,8 +129,6 @@ NFA::build_nfa_from_tree(ParseNode *tree)
   }
 }
 
-// Builds an alternation of nfa1 and nfa2 (nfa1|nfa2)
-//
 NFA
 NFA::build_nfa_alternation(NFA nfa1, NFA nfa2)
 {
@@ -183,9 +149,9 @@ NFA::build_nfa_alternation(NFA nfa1, NFA nfa2)
   // nfa1's states take their places in new_nfa
   new_nfa.fill_states(nfa1);
 
-  // Set new initial state and the transitions from it
-  new_nfa.add_transition(0, nfa1.initial, EPSILON_TRANS);
-  new_nfa.add_transition(0, nfa2.initial, EPSILON_TRANS);
+  // Set new initial state and the edges from it
+  new_nfa.add_edge(0, nfa1.initial, &EPSILON);
+  new_nfa.add_edge(0, nfa2.initial, &EPSILON);
   new_nfa.initial = 0;
 
   // Make up space for the new final state
@@ -193,14 +159,12 @@ NFA::build_nfa_alternation(NFA nfa1, NFA nfa2)
 
   // Set new final state
   new_nfa.final = new_nfa.size - 1;
-  new_nfa.add_transition(nfa1.final, new_nfa.final, EPSILON_TRANS);
-  new_nfa.add_transition(nfa2.final, new_nfa.final, EPSILON_TRANS);
+  new_nfa.add_edge(nfa1.final, new_nfa.final, &EPSILON);
+  new_nfa.add_edge(nfa2.final, new_nfa.final, &EPSILON);
 
   return new_nfa;
 }
 
-// Builds a concatenation of nfa1 and nfa2 (nfa1nfa2)
-//
 NFA
 NFA::build_nfa_concat(NFA nfa1, NFA nfa2)
 {
@@ -216,8 +180,8 @@ NFA::build_nfa_concat(NFA nfa1, NFA nfa2)
   // nfa1's states take their places in new_nfa
   new_nfa.fill_states(nfa1);
 
-  // add transition from nfa1 to nfa2
-  new_nfa.add_transition(nfa1.final, new_nfa.initial, EPSILON_TRANS);
+  // add edge from nfa1 to nfa2
+  new_nfa.add_edge(nfa1.final, new_nfa.initial, &EPSILON);
 
   // set the new initial state (the final state stays nfa2's final state,
   // and was already copied)
@@ -226,8 +190,6 @@ NFA::build_nfa_concat(NFA nfa1, NFA nfa2)
   return new_nfa;
 }
 
-// Builds nfa{m,n}
-//
 NFA
 NFA::build_nfa_repeat(NFA nfa, int repeat_lower, int repeat_upper)
 {
@@ -237,127 +199,92 @@ NFA::build_nfa_repeat(NFA nfa, int repeat_lower, int repeat_upper)
   // make room for the new final state
   nfa.append_empty_state();
 
-  // add new transitions
-  nfa.add_transition(0, nfa.initial, EPSILON_TRANS);	   // new initial to old initial
-  nfa.add_transition(nfa.final, nfa.size - 1, EPSILON_TRANS); // old final to new final
+  // create new loop
+  RegexLoop *regex_loop = new RegexLoop(repeat_lower, repeat_upper);
+
+  // add new edges
+  Edge *edge = new Edge(BEGIN_LOOP_EDGE, regex_loop);
+  nfa.add_edge(0, nfa.initial, edge);	   // new initial to old initial
+  edge = new Edge(END_LOOP_EDGE, regex_loop);
+  nfa.add_edge(nfa.final, nfa.size - 1, edge); // old final to new final
 
   // update states
   nfa.initial = 0;
   nfa.final = nfa.size - 1;
 
-  // add loop to list
-  RegexLoop loop;
-  loop.begin_state = nfa.initial;
-  loop.end_state = nfa.final;
-  loop.repeat_lower = repeat_lower;
-  loop.repeat_upper = repeat_upper;
-  loops.push_back(loop);
-
   return nfa;
 }
 
-// Builds special node for regex strings such as .+ or \w*
 NFA
 NFA::build_nfa_string(ParseNode *node, int repeat_lower, int repeat_upper)
 {
-  // Initialize the NFA
   NFA nfa(2, 0, 1);
-  Transition trans;
-  trans.type = STRING_INPUT;
-  trans.regex_str = new RegexString;
-  trans.regex_str->char_set = node->char_set;
-  trans.regex_str->repeat_lower = repeat_lower;
-  trans.regex_str->repeat_upper = repeat_upper;
-  nfa.add_transition(0, 1, trans);
+  RegexString *regex_str = new RegexString(node->char_set, repeat_lower, repeat_upper);
+  Edge *edge = new Edge(STRING_EDGE, regex_str);
+  nfa.add_edge(0, 1, edge);
 
   return nfa;
 }
 
-// Builds (nfa)
-//
 NFA
 NFA::build_nfa_group(NFA nfa)
 {
   return nfa;
 }
 
-// Builds nfa with character
-//
 NFA
 NFA::build_nfa_character(char character)
 {
   NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
-  Transition trans;
-  trans.type = CHARACTER_INPUT;
-  trans.character = character;
-  nfa.add_transition(0, 1, trans);
+  Edge *edge = new Edge(CHARACTER_EDGE, character);
+  nfa.add_edge(0, 1, edge);
   return nfa;
 }
 
-// Builds nfa with caret
-//
 NFA
 NFA::build_nfa_caret()
 {
   NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
-  Transition trans;
-  trans.type = CARET_INPUT;
-  nfa.add_transition(0, 1, trans);
+  Edge *edge = new Edge(CARET_EDGE);
+  nfa.add_edge(0, 1, edge);
   return nfa;
 }
 
-// Builds nfa with dollar
-//
 NFA
 NFA::build_nfa_dollar()
 {
   NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
-  Transition trans;
-  trans.type = DOLLAR_INPUT;
-  nfa.add_transition(0, 1, trans);
+  Edge *edge = new Edge(DOLLAR_EDGE);
+  nfa.add_edge(0, 1, edge);
   return nfa;
 }
 
-// Builds nfa with ignored element - simply consists of two nodes and an epsilon
-// transition
-//
 NFA
 NFA::build_nfa_ignored()
 {
   NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
-  nfa.add_transition(0, 1, EPSILON_TRANS);
+  nfa.add_edge(0, 1, &EPSILON);
   return nfa;
 }
 
-// Builds nfa with char set as input
-//
 NFA
 NFA::build_nfa_char_set(CharSet *char_set)
 {
-  // Initialize the NFA
   NFA nfa(2, 0, 1);
-  Transition trans;
-  trans.type = CHAR_SET_INPUT;
-  trans.char_set = char_set;
-  nfa.add_transition(0, 1, trans);
+  Edge *edge = new Edge(CHAR_SET_EDGE, char_set);
+  nfa.add_edge(0, 1, edge);
   return nfa;
 }
 
-// Adds a transition to trans_table that has regular character input
 void
-NFA::add_transition(unsigned int from, unsigned int to, Transition trans)
+NFA::add_edge(unsigned int from, unsigned int to, Edge *edge)
 {
   assert(from < size);
   assert(to < size);
 
-  trans_table[from][to] = trans;
+  edge_table[from][to] = edge;
 }
 
-// Shift all the states in the NFA according to some (positive) shift factor
-//
-// For each NFA state: number += shift
-//
-// Functionally, this doesn't affect the NFA, it only makes it larger and renames its states
 void
 NFA::shift_states(unsigned int shift)
 {
@@ -365,59 +292,50 @@ NFA::shift_states(unsigned int shift)
 
   if (shift < 1) return;
 
-  // create a new, empty transition table (of the new size)
-  vector <Transition> empty_row(new_size, EMPTY_TRANS);
-  vector <vector <Transition> > new_trans_table(new_size, empty_row);
+  // create a new, empty edge table (of the new size)
+  vector <Edge *> empty_row(new_size, NULL);
+  vector <vector <Edge *> > new_edge_table(new_size, empty_row);
 
-  // copy all the transitions to the new table, at their new locations
+  // copy all the edges to the new table, at their new locations
   for (unsigned int i = 0; i < size; i++) {
     for (unsigned int j = 0; j < size; j++) {
-      new_trans_table[i + shift][j + shift] = trans_table[i][j];
+      new_edge_table[i + shift][j + shift] = edge_table[i][j];
     }
-  }
-
-  // update indices in the loops list
-  vector <RegexLoop>::iterator it;
-  for (it = loops.begin(); it != loops.end(); it++) {
-    it->begin_state += shift;
-    it->end_state += shift;
   }
 
   // update the NFA members
   size = new_size;
   initial += shift;
   final += shift;
-  trans_table = new_trans_table;
+  edge_table = new_edge_table;
 }
 
-// Fills states 0 up to other.size from other.
-// Requires the use of shift_states first.
+// fills states from other's states
+// (requires the use of shift_states first)
 void
 NFA::fill_states(const NFA &other)
 {
   for (unsigned int i = 0; i < other.size; i++) {
     for (unsigned int j = 0; j < other.size; j++) {
-      trans_table[i][j] = other.trans_table[i][j];
+      edge_table[i][j] = other.edge_table[i][j];
     }
   }
 }
 
-// Appends a new empty state to the NFA
 void
 NFA::append_empty_state()
 {
   // append a new row (already with a larger size)
-  vector <Transition> empty_row(size + 1, EMPTY_TRANS);
-  trans_table.push_back(empty_row);
+  vector <Edge *> empty_row(size + 1, NULL);
+  edge_table.push_back(empty_row);
 
   // append a new column
   for (unsigned int i = 0; i < size; i++)
-    trans_table[i].push_back(EMPTY_TRANS);
+    edge_table[i].push_back(NULL);
 
   size += 1;
 }
 
-// Returns true if repeat quantifier represents a string
 bool
 NFA::is_regex_string(ParseNode *node, int repeat_lower, int repeat_upper)
 {
@@ -434,11 +352,46 @@ NFA::is_regex_string(ParseNode *node, int repeat_lower, int repeat_upper)
   return true;
 }
 
-//
-// PRINT FUNCTION
-//
+vector <Path>
+NFA::find_basis_paths()
+{
+  Path path(initial);
+  vector <Path> paths;
+  bool *visited = new bool[size];
+  for (unsigned int i = 0; i < size; i++)
+    visited[i] = false;
 
-// Print out the NFA
+  traverse(initial, path, paths, visited);
+
+  delete visited;
+
+  return paths;
+}
+
+void
+NFA::traverse(unsigned int curr_state, Path path, vector <Path> &paths, bool *visited)
+{
+  // stop if you already have been here
+  bool been_here = visited[curr_state];
+
+  // final state --> process the path and stop the traversal
+  if (curr_state == final) {
+    path.mark_path_visited(visited);
+    paths.push_back(path);
+    return;
+  }
+
+  // for each adjacent state, find all paths 
+  for (unsigned int next_state = 0; next_state < size; next_state++) {
+    Edge *edge = edge_table[curr_state][next_state];
+    if (edge == NULL) continue;
+    path.append(edge, next_state);
+    traverse(next_state, path, paths, visited);
+    path.remove_last();
+    if (been_here) break;
+  }
+}
+
 void
 NFA::print()
 {
@@ -447,15 +400,15 @@ NFA::print()
   cout << "Initial state: " << initial << " ";
   cout << "Final state: " << final << endl;
   
-  cout << "Transition table: " << endl;
+  cout << "Edge table: " << endl;
   for (unsigned int from = 0; from < size; from++) {
     cout << "State " << from << ": ";
     cout << endl;
     for (unsigned int to = 0; to < size; to++) {
-      Transition trans = trans_table[from][to];
-      if (trans.type != EMPTY) {
+      Edge *edge = edge_table[from][to];
+      if (edge != NULL) {
         cout << "  To state " << to << " on ";
-	trans.print();
+	edge->print();
       }
     }
   }
@@ -463,77 +416,62 @@ NFA::print()
   cout << endl;
 }
 
-// Starting function to generate all strings
-vector <Path>
-NFA::find_basis_paths()
-{
-  Path path;
-  path.states.push_back(nfa.initial);
-
-  vector <Path> paths;
-
-  bool *visited = new bool[size];
-  for (unsigned int i = 0; i < size; i++)
-    visited[i] = false;
-
-  traverse(nfa.initial, path, paths, visited);
-
-  path_count = paths.size();
-  return paths;
-}
-
-// Utility function to find all paths through the NFA.
-void
-NFA::traverse(unsigned int curr_state, Path path, vector <Path> &paths, bool *visited)
-{
-  // stop if you already have been here
-  bool been_here = visited[curr_state];
-
-  // final state --> process the path and stop the traversal
-  if (curr_state == nfa.final) {
-    for (unsigned int i = 1; i < path.size(); i++) {
-      visited[curr_state] = true;
-    }
-    paths.push_back(path);
-    return;
-  }
-
-  // for each adjacent state, find all paths 
-  for (unsigned int next_state = 0; next_state < nfa.size; next_state++) {
-    Transition trans = nfa.trans_table[curr_state][next_state];
-    if (trans.type == EMPTY) continue;
-    path.transition.push_back(trans);
-    path.states.push_back(next_state);
-    find_all_paths(next_state, path);
-    path.transitions.pop_back();
-    path.states.pop_back();
-    if (been_here) break;
-  }
-}
-
-//
-// STAT FUNCTION
-//
-
-// Add NFA stats
 void
 NFA::add_stats(Stats &stats)
 {
   int edge_count = 0;
+  int char_count = 0;
+  int charset_count = 0;
+  int string_count = 0;
+  int begin_loop_count = 0;
+  int end_loop_count = 0;
+  int caret_count = 0;
+  int dollar_count = 0;
   int epsilon_count = 0;
 
   for (unsigned int from = 0; from < size; from++) {
     for (unsigned int to = 0; to < size; to++) {
-      Transition trans = trans_table[from][to];
-      if (trans.type != EMPTY) {
+      Edge *edge = edge_table[from][to];
+      if (edge != NULL) {
         edge_count++;
-	if (trans.type == EPSILON) epsilon_count++;
+	switch (edge->getType()) {
+	  case CHARACTER_EDGE:
+	    char_count++;
+	    break;
+	  case CHAR_SET_EDGE:
+	    charset_count++;
+	    break;
+	  case STRING_EDGE:
+	    string_count++;
+	    break;
+	  case BEGIN_LOOP_EDGE:
+	    begin_loop_count++;
+	    break;
+	  case END_LOOP_EDGE:
+	    end_loop_count++;
+	    break;
+	  case CARET_EDGE:
+	    caret_count++;
+	    break;
+	  case DOLLAR_EDGE:
+	    dollar_count++;
+	    break;
+	  case EPSILON_EDGE:
+	    epsilon_count++;
+	    break;
+	}
       }
     }
   }
 
   stats.add("NFA", "NFA states", size);
   stats.add("NFA", "NFA edges", edge_count);
+  stats.add("NFA", "NFA character edges", char_count);
+  stats.add("NFA", "NFA char set edges", charset_count);
+  stats.add("NFA", "NFA string edges", string_count);
+  stats.add("NFA", "NFA begin loop edges", begin_loop_count);
+  stats.add("NFA", "NFA end loop edges", end_loop_count);
+  stats.add("NFA", "NFA caret edges", caret_count);
+  stats.add("NFA", "NFA dollar edges", dollar_count);
   stats.add("NFA", "NFA epsilon edges", epsilon_count);
-  stats.add("PATHS", "Paths", path_count);
 }

@@ -22,28 +22,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#if 0
+#include <cctype>
+#include <cstdlib>
+#endif
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <cstdlib>
-#include <cctype>
 #include <set>
+#include "CharSet.h"
 #include "ParseTree.h"
 #include "Scanner.h"
-#include "CharSet.h"
 #include "Stats.h"
 #include "error.h"
-
 using namespace std;
 
 //=============================================================
 // RD Parser
 //=============================================================
 
-// create parse tree using regex stored in scanner
-//
 void
-ParseTree::create(Scanner &_scanner)
+ParseTree::build(Scanner &_scanner)
 {
   scanner = _scanner;
   root = expr();
@@ -307,14 +306,14 @@ ParseTree::char_class()
   char c = scanner.get_character();
   scanner.advance();
 
-  ParseNode *char_set_node = new ParseNode(CHAR_SET_NODE, NULL, NULL);
-  char_set_node->char_set = new CharSet();
+  CharSet *char_set = new CharSet();
 
   CharSetItem char_set_item;
   char_set_item.type = CHAR_CLASS_ITEM;
   char_set_item.character = c;
-  char_set_node->char_set->items.push_back(char_set_item);
+  char_set->add_item(char_set_item);
 
+  ParseNode *char_set_node = new ParseNode(CHAR_SET_NODE, char_set);
   return char_set_node;
 }
 
@@ -340,7 +339,7 @@ ParseTree::char_set()
   }
 
   char_set_node = char_list();
-  if (is_complement) char_set_node->char_set->complement = true;
+  if (is_complement) char_set_node->char_set->set_complement(true);
 
   if (scanner.get_type() != RIGHT_BRACKET) {
     stringstream s;
@@ -363,14 +362,13 @@ ParseTree::char_list()
   
   // Check for end of list
   if (scanner.get_type() == RIGHT_BRACKET) {
-    char_set_node = new ParseNode(CHAR_SET_NODE, NULL, NULL);
-    char_set_node->char_set = new CharSet();
+    char_set_node = new ParseNode(CHAR_SET_NODE, new CharSet());
   }
   else {
     char_set_node = char_list();
   }
 
-  char_set_node->char_set->items.push_back(char_set_item);
+  char_set_node->char_set->add_item(char_set_item);
   return char_set_node;
 }
 
@@ -461,7 +459,7 @@ ParseTree::char_range_item()
     s << "ERROR: Parse error - expected character type but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
-  char_set_item.range_start = scanner.get_character();
+  char start = scanner.get_character();
   scanner.advance();
 
   if (scanner.get_type() != HYPHEN) {
@@ -476,17 +474,25 @@ ParseTree::char_range_item()
     s << "ERROR: Parse error - expected character type but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
-  char_set_item.range_end = scanner.get_character();
+  char end = scanner.get_character();
   scanner.advance();
 
+  bool good_range = false;
+  if (start >= 'a' && end <= 'z') good_range = true;
+  if (start >= 'A' && end <= 'Z') good_range = true;
+  if (start >= '0' && end <= '9') good_range = true;
+
+  if (!good_range) {
+    stringstream s;
+    s << "ERROR: Bad range: " << start << "-" << end;
+    throw EgretException(s.str());
+  }
+
+  char_set_item.range_start = start;
+  char_set_item.range_end = end;
   return char_set_item;
 }
 
-//=============================================================
-// Print functions
-//=============================================================
-
-// Prints the tree
 void
 ParseTree::print() {
   cout << "Tree:" << endl;
@@ -545,26 +551,21 @@ ParseTree::print_tree(ParseNode *node, unsigned offset)
   print_tree(node->right, offset + 2);
 }
 
-//=============================================================
-// Stat functions
-//=============================================================
-
-// Obtains stats
 void
 ParseTree::add_stats(Stats &stats)
 {
   ParseTreeStats tree_stats = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   gather_stats(root, tree_stats);
-  stats.add("PARSE_TREE", "Alternation nodes", tree_stats.alternationNodes);
-  stats.add("PARSE_TREE", "Concat nodes", tree_stats.concatNodes);
-  stats.add("PARSE_TREE", "Repeat nodes", tree_stats.repeatNodes);
-  stats.add("PARSE_TREE", "Group nodes", tree_stats.groupNodes);
-  stats.add("PARSE_TREE", "Caret nodes", tree_stats.caretNodes);
-  stats.add("PARSE_TREE", "Dollar nodes", tree_stats.dollarNodes);
-  stats.add("PARSE_TREE", "Character nodes", tree_stats.characterNodes);
-  stats.add("PARSE_TREE", "Character set nodes (not ^)", tree_stats.normalCharSetNodes);
-  stats.add("PARSE_TREE", "Character set nodes (^)", tree_stats.complementCharSetNodes);
-  stats.add("PARSE_TREE", "Ignored nodes", tree_stats.ignoredNodes);
+  stats.add("PARSE_TREE", "Alternation nodes", tree_stats.alternation_nodes);
+  stats.add("PARSE_TREE", "Concat nodes", tree_stats.concat_nodes);
+  stats.add("PARSE_TREE", "Repeat nodes", tree_stats.repeat_nodes);
+  stats.add("PARSE_TREE", "Group nodes", tree_stats.group_nodes);
+  stats.add("PARSE_TREE", "Caret nodes", tree_stats.caret_nodes);
+  stats.add("PARSE_TREE", "Dollar nodes", tree_stats.dollar_nodes);
+  stats.add("PARSE_TREE", "Character nodes", tree_stats.character_nodes);
+  stats.add("PARSE_TREE", "Character set nodes (not ^)", tree_stats.normal_char_set_nodes);
+  stats.add("PARSE_TREE", "Character set nodes (^)", tree_stats.complement_char_set_nodes);
+  stats.add("PARSE_TREE", "Ignored nodes", tree_stats.ignored_nodes);
 }
 
 void
@@ -574,34 +575,34 @@ ParseTree::gather_stats(ParseNode *node, ParseTreeStats &tree_stats)
 
   switch (node->type) {
   case ALTERNATION_NODE:
-    tree_stats.alternationNodes++;
+    tree_stats.alternation_nodes++;
     break;
   case CONCAT_NODE:
-    tree_stats.concatNodes++;
+    tree_stats.concat_nodes++;
     break;
   case REPEAT_NODE:
-    tree_stats.repeatNodes++;
+    tree_stats.repeat_nodes++;
     break;
   case GROUP_NODE:
-    tree_stats.groupNodes++;
+    tree_stats.group_nodes++;
     break;
   case CHARACTER_NODE:
-    tree_stats.characterNodes++;
+    tree_stats.character_nodes++;
     break;
   case CARET_NODE:
-    tree_stats.caretNodes++;
+    tree_stats.caret_nodes++;
     break;
   case DOLLAR_NODE:
-    tree_stats.dollarNodes++;
+    tree_stats.dollar_nodes++;
     break;
   case CHAR_SET_NODE:
-    if (node->char_set->complement)
-      tree_stats.complementCharSetNodes++;
+    if (node->char_set->is_complement())
+      tree_stats.complement_char_set_nodes++;
     else
-      tree_stats.normalCharSetNodes++;
+      tree_stats.normal_char_set_nodes++;
     break;
   case IGNORED_NODE:
-    tree_stats.ignoredNodes++;
+    tree_stats.ignored_nodes++;
     break;
   default:
     assert(false);

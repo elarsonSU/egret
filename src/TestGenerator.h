@@ -25,61 +25,44 @@
 #ifndef TEST_GENERATOR_H
 #define TEST_GENERATOR_H
 
-#include <vector>
-#include <map>
 #include <set>
+#include <string>
+#include <vector>
 #include "NFA.h"
-#include "State.h"
-#include "Transition.h"
-#include "CharSet.h"
-#include "ParseTree.h"
-#include "Stats.h"
-
+#include "Path.h"
 using namespace std;
 
-class TestGenerator
-{
+class TestGenerator {
+
 public:
 
-  // constructors
-  TestGenerator(NFA _nfa) { nfa = _nfa;}
+  TestGenerator(NFA n, string b, set <char> p) { nfa = n; base_substring = b; punct_marks = p;}
 
-  // Find all paths through NFA.
+  // generate test strings
   vector <string> gen_test_strings();
 
-  // Add generation stats.
+  // add test generation stats
   void add_stats(Stats &stats);
 
 private:
 
-  NFA nfa;	// NFA to traverse
-  bool *visited;			// array of visited states
-  vector <vector <unsigned int> > paths;	// list of paths
-  vector <string> path_strings;		// list of paths strings
-  vector <unsigned int> end_states;	// list of end states that need further attention
+  NFA nfa;				// NFA to traverse
+  string base_substring;		// base string for regex strings
+  set <char> punct_marks;		// set of punct marks
+  vector <Path> paths;			// list of paths
   vector <string> test_strings;		// list of test strings
   
-  // HELPER NFA TRAVERSAL FUNCTIONS
+  // generates initial set of strings
+  void gen_initial_strings();
 
-  // Utility function to find all paths through the NFA.
-  void find_all_paths(unsigned int curr_state, vector <unsigned int> path);
-  
-  // Determines if the path should be added to the list of paths.  If so, a path
-  // string is generated for that path.
-  void process_path(vector <unsigned int> path);
-
-  // Initialize set of strings by copying path strings, removing duplicates.
-  void init_test_strings();
-
-  // Adds a string to test string vector (unless it is already there).
+  // adds a string to test string vector (unless it is already there)
   void add_to_test_strings(string s);
 
-  // Generate additional strings by visiting end nodes.
-  void visit_end_nodes();
+  // adds a set of strings to test string vector
+  void add_to_test_strings(set <string> strs);
 
-  // Process loop constructs by adding one less and one more iteration.
-  void process_test_string_loop(State state, bool skip_one_less = false, bool skip_one_more = false);
-
+  // generates additional evil strings
+  void gen_evil_strings();
 };
 
 #endif // TEST_GENERATOR_H

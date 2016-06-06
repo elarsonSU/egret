@@ -22,9 +22,12 @@ EXT_PATH := build/lib.linux-x86_64-3.4
 EXT_LIB  := egret_ext.cpython-34m.so
 
 CXXFLAGS := -Wall -I. -g -O0 -fPIC
+LDFLAGS :=
 
-SRC := egret.cpp Scanner.cpp ParseTree.cpp CharSet.cpp NFA.cpp TestGenerator.cpp Transition.cpp State.cpp Stats.cpp error.cpp
-HDR := Scanner.h ParseTree.h CharSet.h NFA.h TestGenerator.h Transition.h State.h Stats.h error.h
+SRC := CharSet.cpp Edge.cpp NFA.cpp RegexLoop.cpp RegexString.cpp ParseTree.cpp \
+       Path.cpp Scanner.cpp Stats.cpp TestGenerator.cpp egret.cpp error.cpp
+HDR := CharSet.h Edge.h NFA.h RegexLoop.h RegexString.h ParseTree.h \
+       Path.h Scanner.h Stats.h TestGenerator.h error.h
 OBJ := $(patsubst %.cpp, %.o, $(SRC))
 
 all: libegret.a egret_ext
@@ -40,8 +43,13 @@ egret_ext: libegret.a
 	$(PYTHON) create_ext.py build
 	cp -f $(EXT_PATH)/$(EXT_LIB) ..
 
+# degret is a C++ driver used to debug egret engine
+degret:	$(OBJ) main.o
+	$(CXX) $(LDFLAGS) -o $@ $(OBJ) main.o
+
 clean:
 	rm -f libegret.a *.o
 	rm -rf build
-	rm -rf egret
+	rm -rf degret
 	rm -rf ../$(EXT_LIB)
+

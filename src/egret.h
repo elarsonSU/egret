@@ -24,11 +24,10 @@
 
 #include <string>
 #include <vector>
-
 using namespace std;
 
 // run_engine: entry point into EGRET engine
 vector <string>
-run_engine(string regex, bool debug = false, bool stat = false);
+run_engine(string regex, string base_substring, bool debug = false, bool stat = false);
 
 #endif // EGRET_H

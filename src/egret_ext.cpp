@@ -19,11 +19,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <vector>
-#include <string>
 #include <Python.h>
+#include <string>
+#include <vector>
 #include "egret.h"
-
 using namespace std;
 
 static PyObject *EgretExtError;
@@ -32,13 +31,14 @@ static PyObject *
 egret_run(PyObject *self, PyObject *args)
 {
   const char *regex;
+  const char *base_substring;
   int debug_mode;
   int stat_mode;
 
-  if (!PyArg_ParseTuple(args, "spp", &regex, &debug_mode, &stat_mode))
+  if (!PyArg_ParseTuple(args, "sspp", &regex, &base_substring, &debug_mode, &stat_mode))
     return NULL;
 
-  vector <string> tests = run_engine(regex, debug_mode, stat_mode);
+  vector <string> tests = run_engine(regex, base_substring, debug_mode, stat_mode);
 
   PyObject *list = PyList_New(0);
   vector <string>::iterator it;

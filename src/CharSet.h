@@ -22,8 +22,9 @@
 #ifndef CHARSET_H
 #define CHARSET_H
 
-#include <vector>
 #include <set>
+#include <string>
+#include <vector>
 using namespace std;
 
 typedef enum
@@ -41,33 +42,46 @@ struct CharSetItem
   char range_end;	// for CHAR_RANGE_ITEM
 };
 
-struct CharSet
-{
-  vector <CharSetItem> items;	// set of items comprising the set
-  bool complement;		// true if set is complemented
+class CharSet {
 
-  // traversal info
-  int path_index;		// path that contains the char set
-  string path_prefix;		// path string up to visiting this node
-  string substring;		// substring corresponding to this char set
+public:
 
-  // constructor
   CharSet() { complement = false; }
+
+  void set_path_prefix(string p) { path_prefix = p; }
+  void set_complement(bool c) { complement = c; }
+  bool is_complement() { return complement; }
+
+  // add an item to the character set
+  void add_item(CharSetItem item);
 
   // determines if character set is a string candidate
   bool is_string_candidate();
 
-  // find a good character
-  char find_good_character(set<char> punct_marks);
+  // gets a single valid character
+  char get_valid_character();
+
+  // generate evil strings
+  set <string> gen_evil_strings(string path_string, const set <char> &punct_marks);
+
+  // returns true if character set allows punctuation
+  bool allows_punctuation();
+
+  // print the character set
+  void print();
+
+private:
+
+  vector <CharSetItem> items;	// set of items comprising the set
+  bool complement;		// true if set is complemented
+  string path_prefix;		// path string up to visiting this node
+  string substring;		// substring corresponding to this char set
 
   // determines if a character is valid in a complemented character set
-  bool is_good_character(char character);
+  bool is_valid_character(char character);
 
   // creates a set of test characters
-  set<char> create_test_chars(set<char> punct_marks);
-    
-  // print functions
-  void print();
+  set <char> create_test_chars(const set <char> &punct_marks);
 };
 
 #endif // CHARSET_H

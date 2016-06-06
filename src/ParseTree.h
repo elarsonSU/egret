@@ -82,12 +82,11 @@
 #ifndef PARSE_TREE_H
 #define PARSE_TREE_H
 
+#include <set>
+#include <cassert>
 #include "Scanner.h"
 #include "CharSet.h"
 #include "Stats.h"
-
-#include <set>
-#include <cassert>
 using namespace std;
 
 typedef enum
@@ -105,43 +104,66 @@ typedef enum
 
 struct ParseNode
 {
-  ParseNode(NodeType _type, ParseNode *_left, ParseNode *_right)
-    :type(_type), left(_left), right(_right), char_set(NULL) {}
+  ParseNode(NodeType t, ParseNode *l, ParseNode *r) {
+    type = t;
+    left = l;
+    right = r;
+    char_set = NULL;
+  }
 
-  ParseNode(NodeType _type, ParseNode *_left, int lower, int upper)
-    :type(_type), left(_left), right(NULL), repeat_lower(lower),
-    repeat_upper(upper), char_set(NULL) { assert(type == REPEAT_NODE); }
+  ParseNode(NodeType t, CharSet *c) {
+    assert(t == CHAR_SET_NODE);
+    type = t;
+    left = NULL;
+    right = NULL;
+    char_set = c;
+  }
 
-  ParseNode(NodeType _type, char c)
-    :type(_type), left(NULL), right(NULL), character(c),
-     char_set(NULL) { assert(type == CHARACTER_NODE); }
+  ParseNode(NodeType t, char c) {
+    assert(t == CHARACTER_NODE);
+    type = t;
+    left = NULL;
+    right = NULL;
+    char_set = NULL;
+    character = c;
+  }
+
+  ParseNode(NodeType t, ParseNode *l, int lower, int upper) {
+    assert(t == REPEAT_NODE);
+    type = t;
+    left = l;
+    right = NULL;
+    char_set = NULL;
+    repeat_lower = lower;
+    repeat_upper = upper;
+  }
 
   NodeType type;
   ParseNode *left;
   ParseNode *right;
+  CharSet *char_set;	// For CHAR_SET_NODE
+  char character;	// For CHARACTER_NODE
   int repeat_lower;	// For REPEAT_NODE
   int repeat_upper;	// For REPEAT_NODE (-1 for no limit)
-  char character;	// For CHARACTER_NODE
-  CharSet *char_set;	// For CHAR_SET_NODE
 };
 
 class ParseTree {
 
 public:
 
-  // Create parse tree using regex stored in scanner
-  void create(Scanner &_scanner);
+  // build parse tree using regex stored in scanner
+  void build(Scanner &_scanner);
 
-  // Get root of the tree
+  // get root of the tree
   ParseNode *get_root() { return root; }
 
-  // Get set of punctuation marks
+  // get set of punctuation marks
   set<char> get_punct_marks() { return punct_marks; }
 
-  // Prints the tree
+  // prints the tree
   void print();
 
-  // Get tree stats
+  // get tree stats
   void add_stats(Stats &stats);
 
 private:
@@ -150,7 +172,7 @@ private:
   Scanner scanner;		// scanner
   set<char> punct_marks;	// set of punctuation marks
 
-  // Creation functions
+  // creation functions
   ParseNode *expr();
   ParseNode *concat();
   ParseNode *rep();
@@ -165,21 +187,21 @@ private:
   CharSetItem char_class_item();
   CharSetItem char_range_item();
 
-  // Printing functions
+  // print the tree
   void print_tree(ParseNode *node, unsigned offset);
 
-  // Stats
+  // gather stats
   struct ParseTreeStats {
-    int alternationNodes;
-    int concatNodes;
-    int repeatNodes;
-    int groupNodes;
-    int characterNodes;
-    int caretNodes;
-    int dollarNodes;
-    int normalCharSetNodes;
-    int complementCharSetNodes;
-    int ignoredNodes;
+    int alternation_nodes;
+    int concat_nodes;
+    int repeat_nodes;
+    int group_nodes;
+    int character_nodes;
+    int caret_nodes;
+    int dollar_nodes;
+    int normal_char_set_nodes;
+    int complement_char_set_nodes;
+    int ignored_nodes;
   };
   void gather_stats(ParseNode *node, ParseTreeStats &tree_stats);
 

@@ -22,11 +22,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <cstdlib>
 #include <cassert>
+#include <iostream>
+#include <sstream>
+#include <string>
 #include <vector>
 #include "Scanner.h"
 #include "Stats.h"
@@ -34,15 +33,6 @@
 
 using namespace std;
 
-//
-// INITIALIZATION FUNCTIONS
-//
-
-// scans through input string and creates a vector of tokens
-//
-// Ex: in = '(a|b)*'
-// Tokens: LEFT_PAREN, CHARACTER(a), ALTERNATION, CHARACTER(b), RIGHT_PAREN, STAR.
-//
 void
 Scanner::init(string in)
 {
@@ -333,8 +323,6 @@ Scanner::init(string in)
   index = 0;
 }
 
-// get next character from input string
-//
 char
 Scanner::get_next_char(string in, unsigned int &idx)
 {
@@ -345,7 +333,6 @@ Scanner::get_next_char(string in, unsigned int &idx)
   return in[idx];
 }
 
-// process octal character 
 Token
 Scanner::process_octal(string in, unsigned int &idx, char first_digit)
 {
@@ -409,7 +396,6 @@ Scanner::process_octal(string in, unsigned int &idx, char first_digit)
   return token;
 }
     
-// process hexadecimal character 
 Token
 Scanner::process_hex(string in, unsigned int &idx, int num_digits)
 {
@@ -474,8 +460,6 @@ Scanner::process_hex(string in, unsigned int &idx, int num_digits)
   return token;
 }
 
-// processes Python extensions for regular expressions
-//
 Token
 Scanner::process_extension(string in, unsigned int &idx)
 {
@@ -545,8 +529,6 @@ Scanner::process_extension(string in, unsigned int &idx)
   return token;
 }
 
-// process a repeat quantifier {}
-//
 Token
 Scanner::process_repeat(string in, unsigned int &idx)
 {
@@ -678,12 +660,6 @@ Scanner::process_repeat(string in, unsigned int &idx)
   }
 }
 
-//
-// SCANNING FUNCTIONS FOR PARSER
-//
-
-// returns type for current token
-//
 TokenType
 Scanner::get_type()
 {
@@ -693,15 +669,12 @@ Scanner::get_type()
     return ERR;
 }
 
-// returns type string for current token
 string
 Scanner::get_type_str()
 {
   return token_type_to_str(get_type());
 }
 
-// returns repeat lower bound of current token
-//
 int
 Scanner::get_repeat_lower()
 {
@@ -711,8 +684,6 @@ Scanner::get_repeat_lower()
   return tokens[index].repeat_lower;
 }
 
-// returns repeat upper bound of current token
-//
 int
 Scanner::get_repeat_upper()
 {
@@ -722,8 +693,6 @@ Scanner::get_repeat_upper()
   return tokens[index].repeat_upper;
 }
 
-// returns character associated with current token
-//
 char
 Scanner::get_character()
 {
@@ -733,16 +702,12 @@ Scanner::get_character()
   return tokens[index].character;
 }
 
-// advance to the next token
-//
 void
 Scanner::advance()
 {
   index++;
 }
 
-// determines if concatentation between index-1 and index characters
-//
 bool
 Scanner::is_concat()
 {
@@ -776,7 +741,6 @@ Scanner::is_concat()
   return valid_prev_type && !invalid_next_type;
 }
 
-// determines if next three tokens form a character range
 bool
 Scanner::is_char_range()
 {
@@ -809,11 +773,6 @@ Scanner::is_char_range()
   return false;
 }
 
-//
-// PRINTING FUNCTIONS
-//
-
-// print list of tokens
 void
 Scanner::print()
 {
@@ -831,8 +790,6 @@ Scanner::print()
   cout << endl;
 }
 
-// returns string name of a token
-//
 string
 Scanner::token_type_to_str(TokenType type)
 {
@@ -861,15 +818,8 @@ Scanner::token_type_to_str(TokenType type)
   }
 }
 
-//
-// STAT FUNCTIONS
-//
-
-// add scanner stats
 void
 Scanner::add_stats(Stats &stats)
 {
   stats.add("SCANNER", "Tokens", tokens.size());
 }
-
-
