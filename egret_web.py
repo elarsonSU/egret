@@ -25,21 +25,15 @@ import sqlite3
 from flask import Flask, request, url_for, render_template, flash, Response, redirect
 from contextlib import closing
 import egret_api
-from werkzeug import secure_filename
 
 # global variables (for sessions)
 session = [] # Holds all of the strings currently being tested against the regex
 allPass = [] # Currently passing strings from session
 allFail = [] # Currently failing strings from session
+current = [] # Holds all strings from last tested regex
 
 # configuration
 DEBUG = True
-UPLOAD_FOLDER = '/tmp/'
-ALLOWED_EXTENSIONS = set(['txt'])
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 # create our application
 app = Flask(__name__)
@@ -50,9 +44,9 @@ def process_submit():
     regex = request.args.get('regex')
     testString = request.args.get('testString')
     showGroups = request.args.get('showGroups')
-    sessionBox = request.args.get('sessionBox')
     upload = request.args.get('upload') 
     
+    # uploads strings to session
     if upload:
         uploadedStrings = upload.splitlines()
         for item in uploadedStrings:
@@ -61,21 +55,10 @@ def process_submit():
     # empty regex --> return empty results
     if regex == None or regex == '':
         return render_template('egret.html',
-                testString=testString, showGroups=showGroups, session=session, sessionBox=sessionBox)
+                testString=testString, showGroups=showGroups, session=session)
     
     # run egret engine
     (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex)
-    
-    
-    # add passing/failing strings to session if they aren't already,
-    # and if user wants them to be added
-    if sessionBox != "on":
-        for item in passList:
-            if item not in session: # avoids duplicates
-                session.append(item)
-        for item in failList:
-            if item not in session: # avoids duplicates
-                session.append(item)
     
     # get group information
     if showGroups == "on" and errorMsg == None:
@@ -89,18 +72,22 @@ def process_submit():
         testResult = egret_api.run_test_string(regex, testString)
     else:
         testResult = ''
-        
+    
     # clear previous results
     allPass[:] = []
     allFail[:] = []
+    current[:] = []
     
-    # if not adding to session, still need to test these strings
-    if sessionBox == "on":
-        for item in passList:
+    # add items to allpass, allfail, and current if they aren't already    
+    for item in passList:
+        if item not in allPass:
             allPass.append(item)
-        for item in failList:
-            allFail.append(item)
-        
+            current.append(item)
+    for item in failList:
+        if item not in allFail:
+            allFail.append(item)    
+            current.append(item)
+
     # retest each string
     for item in session:
         if egret_api.run_test_string(regex, item) == "ACCEPTED":
@@ -113,7 +100,7 @@ def process_submit():
             regex=regex, testString=testString, showGroups=showGroups,
             passList=passList, failList=failList, errorMsg=errorMsg, warnings=warnings,
             groupHdr=groupHdr, groupRows=groupRows, numGroups=numGroups,
-            testResult=testResult, sessionBox=sessionBox, session=session, allPass=allPass, allFail=allFail)
+            testResult=testResult, session=session, allPass=allPass, allFail=allFail)
 
 @app.route('/download')
 def download_file():
@@ -133,11 +120,28 @@ def upload_file():
 @app.route('/clear')
 def clear():
     session[:] = []
+    current[:] = []
     return render_template('egret.html')
 
-# strings to test with
-# \b\d{3}[-.]?\d{3}[-.]?\d{4}\b phone numbers
-# (?:#|0x)?(?:[0-9A-F]{2}){3,4} colors
+@app.route('/save', methods=["GET", "POST"])
+def save():
+    strings = []
+    submit = request.args.get('submit')
+    if submit == "Save selected strings":
+        strings = request.args.getlist("save")
+    else:
+        strings = current
+        
+    for item in strings:
+        if item not in session:
+            session.append(item)
+    return render_template('egret.html', session=session, allPass=allPass, allFail=allFail)
+    
+    
+# Some sample test strings
+# \b\d{3}[-.]?\d{3}[-.]?\d{4}\b   phone numbers
+# (?:#|0x)?(?:[0-9A-F]{2}){3,4}   colors
+# (IMG\d+)\.png                   names + .png (useful for testing groups)
             
 if __name__ == '__main__':
     # app.run() # for default host/port

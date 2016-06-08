@@ -58,14 +58,6 @@
         Show groups for accepted strings
 	<br>
 	<br>
-	      {% if sessionBox %}
-	<input type="checkbox" name="sessionBox" checked/>
-        {% else %}
-        <input type="checkbox" name="sessionBox"/>
-        {% endif %}
-        Don't add this expression's strings to current session
-	<br>
-	<br>
         <input class="btn btn-primary" type=submit value=Submit>
       </div>
 
@@ -81,9 +73,6 @@
           <li> {{ item }} </li>
           {% endfor %}
         </ul>
-        <a href="/clear" class="btn btn-primary">Clear session</a>
-        <a href="/download" class="btn btn-primary">Download session (.txt)</a>
-        <a href="/upload" class="btn btn-primary">Upload session</a>
       </div>
     </div>
 
@@ -114,7 +103,9 @@
     </div>
 
   </form>
-
+  
+  <!-- START OF STRING SAVING FORM -->
+  <form action="{{ url_for('save') }}" method=get>
   <div class="panel panel-info">
 
     <div class="panel-heading">
@@ -139,6 +130,11 @@
 	  {% for item in row %}
 	  <td> 
             <font face="Courier New, Courier, monospace"> {{ item }} </font>
+            {% if item not in session %}
+            {% if loop.index == 1 %}
+            <input type=checkbox name=save value="{{ item }}">
+            {% endif %}
+            {% endif %}
 	  </td>
 	  {% endfor %}
 	  </font>
@@ -149,7 +145,11 @@
       {% else %}
       <font face="Courier New, Courier, monospace">
         {% for item in allPass %}
-        {{ item }}<br>
+        {{ item }}
+        {% if item not in session %}
+        <input type=checkbox name=save value="{{ item }}">
+        {% endif %}
+        <br>
         {% endfor %}
       </font>
 
@@ -167,12 +167,33 @@
     <div class="panel-body">
       <font face="Courier New, Courier, monospace">
         {% for item in allFail %}
-        {{ item }}<br>
+        {{ item }}
+        {% if item not in session %}
+        <input type=checkbox name=save value="{{ item }}">
+        {% endif %}
+        <br>
         {% endfor %}
       </font>
     </div>
-
+    <!--<a href="/save" class="btn btn-primary">Save selected strings</a>-->
+    <!--<input class="btn btn-primary" type=submit value="Save selected strings">-->
   </div>
+
+  <div class="panel panel-info">
+    <div class="panel-heading">
+      <h2 class="panel-title">Session Controls</h2>
+    </div>
+    <div class="panel panel-body">
+      <input class="btn btn-primary" type=submit name=submit value="Save selected strings">
+      <input class="btn btn-primary" type=submit name=submit value="Save all strings">
+      <a href="/clear" class="btn btn-danger">Clear session</a>
+      <a href="/download" class="btn btn-primary">Download session</a>
+      <a href="/upload" class="btn btn-primary">Upload session</a>
+    </div>
+  </div>
+  
+  </form> 
+  <!-- END OF STRING SAVING FORM -->
 
   <div class="panel panel-danger">
 
