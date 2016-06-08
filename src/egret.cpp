@@ -20,27 +20,21 @@
 */
 
 #include <iostream>
-#include <fstream>
 #include <string>
-#include <cstdlib>
-#include <cstring>
 #include <vector>
-#include "Stats.h"
-#include "Scanner.h"
-#include "ParseTree.h"
 #include "NFA.h"
-#include "Transition.h"
+#include "ParseTree.h"
+#include "Scanner.h"
+#include "Stats.h"
+#include "TestGenerator.h"
 #include "error.h"
-
 using namespace std;
 
-// Global variables / options
 static bool debug_mode = false;
 static bool stat_mode = false;
 
-// run_engine: entry point into EGRET engine
 vector <string>
-run_engine(string regex, bool debug = false, bool stat = false)
+run_engine(string regex, string base_substring, bool debug = false, bool stat = false)
 {
   vector <string> test_strings;
 
@@ -58,14 +52,15 @@ run_engine(string regex, bool debug = false, bool stat = false)
   
     // build parse tree
     ParseTree tree;
-    tree.create(scanner);
+    tree.build(scanner);
 
     // build NFA
     NFA nfa;
-    nfa.init(tree);
+    nfa.build(tree);
 
-    // traverse NFA
-    test_strings = nfa.nfa_traverse();
+    // generate tests
+    TestGenerator gen(nfa, base_substring, tree.get_punct_marks());
+    test_strings = gen.gen_test_strings();
 
     // print debug info
     if (debug_mode) {
@@ -81,6 +76,7 @@ run_engine(string regex, bool debug = false, bool stat = false)
       scanner.add_stats(stats);
       tree.add_stats(stats);
       nfa.add_stats(stats);
+      gen.add_stats(stats);
       stats.print();
     }
   }

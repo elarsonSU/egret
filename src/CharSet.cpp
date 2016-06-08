@@ -19,17 +19,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <vector>
-#include <set>
-#include <iostream>
-#include <sstream>
-#include <cstdlib>
 #include <cassert>
+#include <iostream>
+#include <set>
+#include <sstream>
+#include <vector>
 #include "CharSet.h"
 #include "error.h"
 using namespace std;
 
-// Determines if character set is a string candidate
+void
+CharSet::add_item(CharSetItem item)
+{
+  items.push_back(item);
+}
+
 bool
 CharSet::is_string_candidate()
 {
@@ -59,9 +63,8 @@ CharSet::is_string_candidate()
   return false;
 }
 
-// Finds a good character in the character set
 char
-CharSet::find_good_character(set<char> punct_marks)
+CharSet::get_valid_character()
 {
   vector <CharSetItem>::iterator it;
 
@@ -104,44 +107,39 @@ CharSet::find_good_character(set<char> punct_marks)
     throw EgretException("ERROR (internal): Could not find good char in regular char set");
   }
 
-  // At this point, the character set is complemented.
+  // At this point, the character set is complemented. Find the first valid character.
   for (char c = 'a'; c <= 'z'; c++) {
-    if (is_good_character(c)) return c;
+    if (is_valid_character(c)) return c;
   }
   for (char c = 'A'; c <= 'Z'; c++) {
-    if (is_good_character(c)) return c;
+    if (is_valid_character(c)) return c;
   }
   for (char c = '0'; c <= '9'; c++) {
-    if (is_good_character(c)) return c;
+    if (is_valid_character(c)) return c;
   }
-  if (is_good_character(' ')) return ' ';
-
-  set<char>::iterator si;
-  for (si = punct_marks.begin(); si != punct_marks.end(); si++) {
-    if (is_good_character(*si)) return (*si);
-  }
+  if (is_valid_character(' ')) return ' ';
 
   for (char c = 33; c <= 47; c++) {
-    if (is_good_character(c)) return c;
+    if (is_valid_character(c)) return c;
   }
   for (char c = 58; c <= 64; c++) {
-    if (is_good_character(c)) return c;
+    if (is_valid_character(c)) return c;
   }
   for (char c = 91; c <= 96; c++) {
-    if (is_good_character(c)) return c;
+    if (is_valid_character(c)) return c;
   }
   for (char c = 123; c <= 126; c++) {
-    if (is_good_character(c)) return c;
+    if (is_valid_character(c)) return c;
   }
 
   throw EgretException("ERROR (internal): Could not find good char in complemented char set");
 }
 
-// Determines if a character is valid in a complemented character set
 bool
-CharSet::is_good_character(char character)
+CharSet::is_valid_character(char character)
 {
   assert(complement);
+
   vector <CharSetItem>::iterator it;
   for (it = items.begin(); it != items.end(); it++) {
     switch (it->type) {
@@ -198,10 +196,25 @@ CharSet::is_good_character(char character)
   return true;
 }
 
-// Creates a set of test characters
-//
+set <string>
+CharSet::gen_evil_strings(string path_string, const set <char> &punct_marks)
+{
+  set <char> test_chars  = create_test_chars(punct_marks);
+  string path_suffix = path_string.substr(path_prefix.length() + 1);
+
+  set <string> evil_strings;
+  set <char>::iterator cs;
+  for (cs = test_chars.begin(); cs != test_chars.end(); cs++) {
+    string new_string;
+    new_string = path_prefix + *cs + path_suffix;
+    evil_strings.insert(new_string);
+  }
+
+  return evil_strings;
+}
+
 set <char>
-CharSet::create_test_chars(set<char> punct_marks)
+CharSet::create_test_chars(const set<char> &punct_marks)
 {
   set <char> test_chars;
   bool lowercase_flag = false;
@@ -303,7 +316,7 @@ CharSet::create_test_chars(set<char> punct_marks)
       }
       else {
 	stringstream s;
-        s << "ERROR: Bad range: " << start << "-" << end;
+        s << "ERROR (internal): Invalid range: " << start << "-" << end;
         throw EgretException(s.str());
       }
     }
@@ -419,9 +432,35 @@ CharSet::create_test_chars(set<char> punct_marks)
   return test_chars;
 }
 
-//
-// Print function
-//
+bool
+CharSet::allows_punctuation()
+{
+  if (complement) return true;
+
+  vector <CharSetItem>::iterator it;
+  for (it = items.begin(); it != items.end(); it++) {
+    switch (it->type) {
+      case CHARACTER_ITEM:
+	if (ispunct(it->character)) return true;
+        break;
+      case CHAR_CLASS_ITEM:
+        switch (it->character) {
+          case 'E':
+          case 'D':
+          case 'S':
+          case '.':
+	    return true;
+          default:	;
+	}
+        break;
+      case CHAR_RANGE_ITEM:
+	break;	// ignore
+    }
+  }
+
+  return false;
+}
+
 void
 CharSet::print()
 {
@@ -442,4 +481,3 @@ CharSet::print()
     }
   }
 }
-

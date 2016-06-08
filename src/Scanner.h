@@ -28,7 +28,6 @@
 #include <vector>
 #include <string>
 #include "Stats.h"
-
 using namespace std;
 
 // Types of tokens
@@ -65,8 +64,7 @@ struct Token
 
 // A scanner class, encapsulates the input stream as a set of tokens
 //
-class Scanner
-{
+class Scanner {
 
 public:
   // scans through input string and creates a vector of tokens
