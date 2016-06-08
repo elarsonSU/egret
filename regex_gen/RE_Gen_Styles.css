@@ -1,0 +1,10 @@
+.hide{
+    display: none;
+}
+
+label.unbolded {
+    display: inline-block;
+    margin-bottom: 5px;
+    max-width: 100%;
+    font-weight: unset;
+}
