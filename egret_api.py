@@ -21,7 +21,7 @@
 import re
 import egret_ext
 
-def run_egret(regexStr):
+def run_egret(regexStr, testList):
     inputStrs = egret_ext.run(regexStr, "evil", False, False)
     status = inputStrs[0]
     if status[0:5] == "ERROR":
@@ -36,6 +36,8 @@ def run_egret(regexStr):
     nonMatches = []
     regex = re.compile(regexStr)
 
+    inputStrs = sorted(list(set(inputStrs) | set(testList)))
+    
     for inputStr in inputStrs:
         search = regex.fullmatch(inputStr)
         if search:

@@ -28,9 +28,7 @@ import egret_api
 
 # global variables (for sessions)
 session = [] # Holds all of the strings currently being tested against the regex
-allPass = [] # Currently passing strings from session
-allFail = [] # Currently failing strings from session
-current = [] # Holds all strings from last tested regex
+formData = {}
 
 # configuration
 DEBUG = True
@@ -41,66 +39,81 @@ app.config.from_object(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def process_submit():
-    regex = request.args.get('regex')
-    testString = request.args.get('testString')
-    showGroups = request.args.get('showGroups')
-    upload = request.args.get('upload') 
+    global session
+
+    regex = request.form.get('regex')
+    testString = request.form.get('testString')
+    showGroups = request.form.get('showGroups')
+    formData['regex'] = regex
+    formData['testString'] = testString
+    formData['showGroups'] = showGroups
     
-    # uploads strings to session
-    if upload:
-        uploadedStrings = upload.splitlines()
-        for item in uploadedStrings:
+    addedStrs = []
+    if "addSelectedAccept" in request.form:
+        addedStrs = request.form.getlist("accept")
+    elif "addAccept" in request.form:
+        addedStrs = formData['passList']
+    elif "addSelectedReject" in request.form:
+        addedStrs = request.form.getlist("reject")
+    elif "addReject" in request.form:
+        addedStrs = formData['failList']
+    elif "deleteSelected" in request.form:
+        deletedStrs = request.form.getlist("delete")
+        for s in deletedStrs:
+            session.remove(s)
+    elif "deleteAll" in request.form:
+        session = []
+
+    for item in addedStrs:
+        if item not in session:
             session.append(item)
+
+    # uploads strings to session
+    #upload = request.form.get('upload') 
+    #if upload:
+    #    uploadedStrings = upload.splitlines()
+    #    for item in uploadedStrings:
+    #        session.append(item)
 
     # empty regex --> return empty results
     if regex == None or regex == '':
-        return render_template('egret.html',
-                testString=testString, showGroups=showGroups, session=session)
+        formData['regex'] = ''
+        return render_template('egret.html', formData=formData, session=session)
     
     # run egret engine
-    (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex)
+    (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex, session)
+    formData['passList'] = passList
+    formData['failList'] = failList
+    formData['errorMsg'] = errorMsg
+    formData['warnings'] = warnings
     
     # get group information
     if showGroups == "on" and errorMsg == None:
         (groupHdr, groupRows, numGroups) = egret_api.get_group_info(regex, passList)
+        formData['groupHdr'] = groupHdr
+        formData['groupRows'] = groupRows
+        formData['numGroups'] = groupRows
     else:
-        groupHdr = groupRows = numGroups = None
+        formData['groupHdr'] = None
+        formData['groupRows'] = None
+        formData['numGroups'] = None
     
     
     # determine if test string is accepted or not
     if testString != None and testString != '' and errorMsg == None:
-        testResult = egret_api.run_test_string(regex, testString)
+        formData['testResult'] = egret_api.run_test_string(regex, testString)
     else:
-        testResult = ''
+        formData['testResult'] = ''
     
     # clear previous results
-    allPass[:] = []
-    allFail[:] = []
-    current[:] = []
-    
-    # add items to allpass, allfail, and current if they aren't already    
-    for item in passList:
-        if item not in allPass:
-            allPass.append(item)
-            current.append(item)
-    for item in failList:
-        if item not in allFail:
-            allFail.append(item)    
-            current.append(item)
-
-    # retest each string
-    for item in session:
-        if egret_api.run_test_string(regex, item) == "ACCEPTED":
-            allPass.append(item)
-        else:
-            allFail.append(item)
+    current = sorted(list(set(passList) | set(failList)))
     
     # render webpage with current session
-    return render_template('egret.html',
-            regex=regex, testString=testString, showGroups=showGroups,
-            passList=passList, failList=failList, errorMsg=errorMsg, warnings=warnings,
-            groupHdr=groupHdr, groupRows=groupRows, numGroups=numGroups,
-            testResult=testResult, session=session, allPass=allPass, allFail=allFail)
+    return render_template('egret.html', formData=formData, session=session)
+            
+@app.route('/regex_gen', methods=['GET', 'POST'])
+def generate_regex():
+    return render_template('regex_gen.html')
 
 @app.route('/download')
 def download_file():
@@ -116,33 +129,13 @@ def download_file():
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
     return render_template('upload.html')
-   
-@app.route('/clear')
-def clear():
-    session[:] = []
-    current[:] = []
-    return render_template('egret.html')
 
-@app.route('/save', methods=["GET", "POST"])
-def save():
-    strings = []
-    submit = request.args.get('submit')
-    if submit == "Save selected strings":
-        strings = request.args.getlist("save")
-    else:
-        strings = current
-        
-    for item in strings:
-        if item not in session:
-            session.append(item)
-    return render_template('egret.html', session=session, allPass=allPass, allFail=allFail)
-    
-    
+   
 # Some sample test strings
 # \b\d{3}[-.]?\d{3}[-.]?\d{4}\b   phone numbers
 # (?:#|0x)?(?:[0-9A-F]{2}){3,4}   colors
 # (IMG\d+)\.png                   names + .png (useful for testing groups)
             
 if __name__ == '__main__':
-    # app.run() # for default host/port
+    #app.run() # for default host/port
     app.run(host="0.0.0.0",port=8080) # for my dev environment

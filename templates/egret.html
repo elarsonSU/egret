@@ -23,22 +23,28 @@
     </div>
   </div>
 
-  {% if warnings %}
+  <div class="panel panel-info">
+     <h2 class="panel-title">
+     <a href="/regex_gen">Generate good regular expressions for common tasks</a>
+     </h2>
+  </div>
+
+  {% if formData['warnings'] %}
   <div class="alert alert-warning">
     <strong>Warnings:</strong>
     <ul>
-      {% for warning in warnings %}
+      {% for warning in formData['warnings'] %}
       <li> {{ warning }} </li>
       {% endfor %}
     </ul>
   </div>
   {% endif %}
 
-  {% if errorMsg %}
-  <p class="alert alert-danger"><strong>{{ errorMsg }}</strong>
+  {% if formData['errorMsg'] %}
+  <p class="alert alert-danger"><strong>{{ formData['errorMsg'] }}</strong>
   {% endif %}
 
-  <form action="{{ url_for('process_submit') }}" method=get>
+  <form action="{{ url_for('process_submit') }}" method=post>
 
     <div class="panel panel-info">
 
@@ -47,10 +53,10 @@
       </div>
 
       <div class="panel-body">
-        <input class="form-control" type="text" name="regex" value="{{ regex }}"
+        <input class="form-control" type="text" name="regex" value="{{ formData['regex'] }}"
           style="font-family: Courier New, Courier, monospace">
 	<br>
-        {% if showGroups %}
+        {% if formData['showGroups'] %}
 	<input type="checkbox" name="showGroups" checked/>
         {% else %}
         <input type="checkbox" name="showGroups"/>
@@ -63,18 +69,6 @@
 
     </div>
     
-    <div class="panel panel-info">
-      <div class="panel-heading">
-        <h2 class="panel-title">Strings in current session:</h2>
-      </div>
-      <div class = "panel-body">
-        <ul>
-          {% for item in session %}
-          <li> {{ item }} </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
 
     <div class="panel panel-info">
 
@@ -83,8 +77,8 @@
       </div>
 
       <div class="panel-body">
-        {% if testString %}
-        <input class="form-control" type="text" name="testString" value="{{ testString }}"
+        {% if formData['testString'] %}
+        <input class="form-control" type="text" name="testString" value="{{ formData['testString'] }}"
           style="font-family: Courier New, Courier, monospace"><br>
 	{% else %}
         <input class="form-control" type="text" name="testString"
@@ -93,19 +87,15 @@
 
         <input class="btn btn-primary" type=submit value=Test>
 
-        {% if testResult == "ACCEPTED" %}
-	<h3><span class="label label-success"> {{ testResult }} </span></h3>
-        {% elif testResult == "REJECTED" %}
-	<h3><span class="label label-danger"> {{ testResult }} </span></h3>
+        {% if formData['testResult'] == "ACCEPTED" %}
+	<h3><span class="label label-success"> {{ formData['testResult'] }} </span></h3>
+        {% elif formData['testResult'] == "REJECTED" %}
+	<h3><span class="label label-danger"> {{ formData['testResult'] }} </span></h3>
         {% endif %}
       </div>
 
     </div>
 
-  </form>
-  
-  <!-- START OF STRING SAVING FORM -->
-  <form action="{{ url_for('save') }}" method=get>
   <div class="panel panel-info">
 
     <div class="panel-heading">
@@ -114,27 +104,29 @@
 
     <div class="panel-body">
 
-      {% if groupHdr %}
+      {% if formData['groupHdr'] %}
       <table class="table table-bordered">
         <tr>
           <th></th>
-          <th colspan="{{ numGroups }}" style="text-align:center">Groups</th>
+          <th colspan="{{ formData['numGroups'] }}" style="text-align:center">Groups</th>
         </tr>
         <tr>
-          {% for item in groupHdr %}
+          {% for item in formData['groupHdr'] %}
           <th> {{ item }} </th>
           {% endfor %}
         </tr>
-        {% for row in groupRows %}
+        {% for row in formData['groupRows'] %}
         <tr>
 	  {% for item in row %}
 	  <td> 
-            <font face="Courier New, Courier, monospace"> {{ item }} </font>
-            {% if item not in session %}
             {% if loop.index == 1 %}
-            <input type=checkbox name=save value="{{ item }}">
+            {% if item in session %}
+            <input type=checkbox name=accept value="{{ item }}" checked>
+            {% else %}
+            <input type=checkbox name=accept value="{{ item }}">
             {% endif %}
             {% endif %}
+            <font face="Courier New, Courier, monospace"> {{ item }} </font>
 	  </td>
 	  {% endfor %}
 	  </font>
@@ -144,16 +136,20 @@
 
       {% else %}
       <font face="Courier New, Courier, monospace">
-        {% for item in allPass %}
-        {{ item }}
-        {% if item not in session %}
-        <input type=checkbox name=save value="{{ item }}">
+        {% for item in formData['passList'] %}
+        {% if item in session %}
+        <input type=checkbox name=accept value="{{ item }}" checked>
+        {% else %}
+        <input type=checkbox name=accept value="{{ item }}">
         {% endif %}
-        <br>
+        {{ item }}
+	<br>
         {% endfor %}
       </font>
-
+      <br>
       {% endif %}
+      <input class="btn btn-primary" type=submit name="addSelectedAccept" value="Save selected strings">
+      <input class="btn btn-primary" type=submit name="addAccept" value="Save all accepted strings">
     </div>
 
   </div>
@@ -166,34 +162,43 @@
 
     <div class="panel-body">
       <font face="Courier New, Courier, monospace">
-        {% for item in allFail %}
-        {{ item }}
-        {% if item not in session %}
-        <input type=checkbox name=save value="{{ item }}">
+        {% for item in formData['failList'] %}
+        {% if item in session %}
+        <input type=checkbox name=reject value="{{ item }}" checked>
+        {% else %}
+        <input type=checkbox name=reject value="{{ item }}">
         {% endif %}
+        {{ item }}
         <br>
         {% endfor %}
       </font>
+      <br>
+      <input class="btn btn-primary" type=submit name="addSelectedReject" value="Save selected strings">
+      <input class="btn btn-primary" type=submit name="addReject" value="Save all rejected strings">
     </div>
-    <!--<a href="/save" class="btn btn-primary">Save selected strings</a>-->
-    <!--<input class="btn btn-primary" type=submit value="Save selected strings">-->
   </div>
 
   <div class="panel panel-info">
     <div class="panel-heading">
-      <h2 class="panel-title">Session Controls</h2>
+      <h2 class="panel-title">Saved Strings</h2>
     </div>
     <div class="panel panel-body">
-      <input class="btn btn-primary" type=submit name=submit value="Save selected strings">
-      <input class="btn btn-primary" type=submit name=submit value="Save all strings">
-      <a href="/clear" class="btn btn-danger">Clear session</a>
+      <font face="Courier New, Courier, monospace">
+        {% for item in session %}
+        <input type=checkbox name=delete value="{{ item }}">
+        {{ item }}
+	<br>
+        {% endfor %}
+      </font>
+      <br>
       <a href="/download" class="btn btn-primary">Download session</a>
       <a href="/upload" class="btn btn-primary">Upload session</a>
+      <input class="btn btn-primary" type=submit name="deleteSelected" value="Remove selected strings">
+      <input class="btn btn-primary" type=submit name="deleteAll" value="Remove all strings">
     </div>
   </div>
   
   </form> 
-  <!-- END OF STRING SAVING FORM -->
 
   <div class="panel panel-danger">
 
@@ -202,7 +207,7 @@
     </div>
 
     <div class="panel-body">
-      <p>Copyright (C) 2016 Eric Larson and Anna Kirk</p>
+      <p>Copyright (C) 2016 Eric Larson, Anna Kirk, and Nicolas Oman</p>
       <p>Program maintained by Eric Larson (elarson@seattleu.edu) at Seattle University</p>
       <p><a href="http://fac-staff.seattleu.edu/elarson/web/egret.htm">
         Additional information about EGRET
