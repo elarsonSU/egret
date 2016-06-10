@@ -24,7 +24,6 @@
 #include <string>
 #include <vector>
 #include "Stats.h"
-
 using namespace std;
 
 void

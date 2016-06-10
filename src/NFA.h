@@ -26,36 +26,32 @@
 #define NFA_H
 
 #include <vector>
-#include <map>
-#include <set>
-#include "State.h"
-#include "Transition.h"
+#include "Edge.h"
 #include "CharSet.h"
 #include "ParseTree.h"
+#include "Path.h"
 #include "Stats.h"
-
 using namespace std;
 
-class NFA
-{
+class NFA {
+
 public:
 
-  // constructors
   NFA() {}
   NFA(unsigned int _size, unsigned int _initial, unsigned int _final);
   NFA(const NFA &other);
   NFA &operator= (const NFA &other);
 
-  // Build an NFA from a parse tree.
-  void init(ParseTree &tree);
+  // build an NFA from the parse tree
+  void build(ParseTree &tree);
 
-  // Find all paths through NFA.
-  vector <string> nfa_traverse();
+  // create a set of basis paths
+  vector <Path> find_basis_paths();
 
-  // Print out the NFA.
+  // print out the NFA
   void print();
 
-  // Add NFA stats.
+  // add NFA stats
   void add_stats(Stats &stats);
 
 private:
@@ -63,97 +59,58 @@ private:
   unsigned int size;			// number of states
   unsigned int initial;			// initial state
   unsigned int final;			// final state
-  vector <vector <Transition> > trans_table;	// transition table
-  vector <State> states;		// list of states  
-  set<char> punct_marks;		// set of punctuation marks
-  vector <vector <unsigned int> > paths;	// list of paths
-  vector <string> path_strings;		// list of paths strings
-  vector <unsigned int> end_states;	// list of end states that need further attention
-  vector <string> test_strings;		// list of test strings
+  vector <vector <Edge *> > edge_table;	// edge table
   
-  // variables for processing carets and dollars
-  bool all_start_with_caret;
-  bool all_end_with_dollar;
-  bool warn_caret_middle;
-  bool warn_dollar_middle;
-  bool warn_caret_start;
-  bool warn_dollar_end;
-
-  //
-  // HELPER NFA BUILDING FUNCTIONS
-  //
-
-  // Builds an NFA from tree
+  // builds an NFA from tree
   NFA build_nfa_from_tree(ParseNode *tree);
 
-  // Builds an alternation of nfa1 and nfa2 (nfa1|nfa2)
+  // builds an alternation of nfa1 and nfa2 (nfa1|nfa2)
   NFA build_nfa_alternation(NFA nfa1, NFA nfa2);
 
-  // Builds a concatenation of nfa1 and nfa2 (nfa1nfa2)
+  // builds a concatenation of nfa1 and nfa2 (nfa1nfa2)
   NFA build_nfa_concat (NFA nfa1, NFA nfa2);
 
-  // Builds nfa{m,n}
+  // builds nfa{m,n}
   NFA build_nfa_repeat(NFA nfa, int repeat_lower, int repeat_upper);
 
-  // Builds special node for regex strings such as .+ or \w*
+  // builds special node for regex strings such as .+ or \w*
   NFA build_nfa_string(ParseNode *tree, int repeat_lower, int repeat_upper);
 
-  // Builds (nfa)
+  // builds (nfa)
   NFA build_nfa_group(NFA nfa);
 
-  // Builds nfa with character
+  // builds nfa with character
   NFA build_nfa_character(char character);
 
-  // Builds nfa with caret
+  // builds nfa with caret
   NFA build_nfa_caret();
 
-  // Builds nfa with dollar
+  // builds nfa with dollar
   NFA build_nfa_dollar();
 
-  // Builds nfa with ignored element - simply consists of two nodes and an epsilon
-  // transition
+  // builds nfa with ignored element
   NFA build_nfa_ignored();
 
-  // Builds nfa with char set as input
+  // builds nfa with char set as input
   NFA build_nfa_char_set(CharSet *char_set);
 
-  // Adds a transition between two states - regular character input
-  void add_transition(unsigned int from, unsigned int to, Transition trans);
+  // adds an edge to edge table
+  void add_edge(unsigned int from, unsigned int to, Edge *edge);
 
-  // Shift (renames) all the states in the NFA according to some (positive) shift factor
+  // shift (renames) all the states in the NFA according to some (positive) shift factor
   void shift_states(unsigned int shift);
 
-  // Fills states 0 up to other.size with other's states
+  // fills states from other's states
   void fill_states(const NFA &other);
 
-  // Appends a new empty state to the NFA
+  // appends a new empty state to the NFA
   void append_empty_state();
 
-  // Returns true if repeat quantifier represents a string
+  // returns true if repeat quantifier represents a string
   bool is_regex_string(ParseNode *node, int repeat_lower, int repeat_upper);
 
-  // HELPER NFA TRAVERSAL FUNCTIONS
-  //
-
-  // Utility function to find all paths through the NFA.
-  void find_all_paths(unsigned int curr_state, vector <unsigned int> path);
-  
-  // Determines if the path should be added to the list of paths.  If so, a path
-  // string is generated for that path.
-  void process_path(vector <unsigned int> path);
-
-  // Initialize set of strings by copying path strings, removing duplicates.
-  void init_test_strings();
-
-  // Adds a string to test string vector (unless it is already there).
-  void add_to_test_strings(string s);
-
-  // Generate additional strings by visiting end nodes.
-  void visit_end_nodes();
-
-  // Process loop constructs by adding one less and one more iteration.
-  void process_test_string_loop(State state, bool skip_one_less = false, bool skip_one_more = false);
-
+  // utility function to find all paths through the NFA
+  void traverse(unsigned int curr_state, Path path, vector <Path> &paths, bool *visited);
 };
 
 #endif // NFA_H

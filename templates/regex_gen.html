@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>GGRE Generation of Good Regular Expressions</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script> <!--JQUERY-->
+	<script type=text/javascript src="{{url_for('static', filename='REGen.js') }}"></script>
+        <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='RE_Gen_Styles.css') }}">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+    </head>
+    <body onload="document.forms['create-re'].reset();">
+        <div class="container">
+            <div class='panel panel-primary'>
+                <div class="panel-heading"><h1>REGULAR EXPRESSION GENERATOR</h1></div>
+            </div>
+            <div id="form-wrapper">
+                <form id="create-re" name="create-re">
+                    <div class='panel panel-info'>
+                            <div class='panel-heading'>
+                                <h2 class='panel-title'>Select One:</h2>
+                            </div>
+                            
+                            <div class="panel-body">
+                                <input onchange="selectForm()" type="radio" class="form-radio re-type" name="re-type" value="integer" checked> Integer
+                                <input onchange="selectForm()" type="radio" class="form-radio re-type" name="re-type" value="date"> Date
+                            </div>
+                    </div>
+                    <div class="panel panel-info">
+                        <div class="panel-heading">
+                            <h2 class="panel-title">Fill Out the Following Form: </h2>
+                        </div>
+                        <div class="panel-body">
+                            <div id='ints' class="">
+                                <div id="edit-max-dig-wrapper" class="form-item">
+                                    <label for="edit-max-dig" class="unbolded">Maximum Digits: <span title="This field is required." class="form-required">*</span></label>
+                                    <input onchange="" type="text" class="form-text required" size="4" maxlength="128" id="edit-max-dig" name="Max_dig" style="font-family: Courier New, Courier, monospace">
+                                </div>
+                                <div id="switch-negative-wraper" class='form-item'>
+                                    <label for="switch-negative" class="unbolded">Allow Negative Values: <span title="This field is required." class="form-required">*</span></label>
+                                    <input onchange='swapNegZero()' type="checkbox" class="form-text required" id='switch-negative' value="yes_negative" name="negative">
+                                    <div id="neg-zero-wrapper" class="hide">
+                                        <label for="neg-zero">Allow Negative Zero: <span title="This field is required." class="form-required">*</span></label>
+                                        <input onchange='' type="checkbox" class="form-text required" id='neg-zero' value="neg-zero" name="neg-zero">
+                                    </div>
+                                </div>
+                                <div id="switch-leading-zero-wrapper" class='form-item'>
+                                    <label for="switch-leading-zero" class="unbolded">Allow Leading Zeroes: <span title="This field is required." class="form-required">*</span></label>
+                                    <input onchange='' type="checkbox" class="form-check required" id='switch-leading-zero' value="yes_zeroes" name="leadingZeroes">
+                                </div>
+                                <div id="comma-separator-wraper" class="form-item">
+                                    <label for="comma-separator" class="unbolded">Comma Formating: <span title="This field is required." class="form-required">*</span></label>
+                                    <div>
+                                        <input onchange="" type="radio" class="form-radio" name="comma-separator" value="Yes" checked> Yes
+                                    </div>
+                                    <div>
+                                        <input onchange="" type="radio" class="form-radio" name="comma-separator" value="No"> No
+                                    </div>
+                                    <div>
+                                        <input onchange="" type="radio" class="form-radio" name="comma-separator" value="Both"> Both
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id='dates' class='hide '> 
+                                <div id="switch-zeroes-wraper" class='form-item'>
+                                    <label for="switch-zeroes" class="unbolded">Enforce Zeroes (i.e. "01" instead of "1"): <span title="This field is required." class="form-required">*</span></label>
+                                    <input onchange='' type="checkbox" class="form-text required" id='switch-zeroes' value="yes-enforce" name="enforce-zero">
+                                </div>    
+                                <div id="edit-format-wrapper" class="form-item">
+                                    <label for="edit-format" class="unbolded">Select Format: <span title="This field is required." class="form-required">*</span></label>
+                                    <div>
+                                        <input onchange="" type="radio" class="form-radio" name="edit-format" value="mdy" checked> Month / Day / Year
+                                    </div>
+                                    <div>
+                                        <input onchange="" type="radio" class="form-radio" name="edit-format" value="dmy"> Day / Month / Year
+                                    </div>
+                                </div>
+                                <div id="year-selection-wrapper" class="form-item">
+                                    <label for="year-selection" class="unbolded">Year Format: <span title="This field is required." class="form-required">*</span></label>
+                                    <div>
+                                        <input onchange="" type="radio" class="form-radio" name="year-selection" value="two" checked> 2 digits
+                                    </div>
+                                    <div>
+                                        <input onchange="" type="radio" class="form-radio" name="year-selection" value="four"> full year
+                                    </div>
+                                    <div>
+                                        <input onchange="" type="radio" class="form-radio" name="year-selection" value="both"> Both
+                                    </div>
+                                </div>
+                            </div>
+                            <br>
+                            <input type="button" onclick="createRegularExpression()" class="form-submit btn btn-primary" value="Generate" id="edit-submit" name="op">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h2 class="panel-title">Regular Expression: </h2>
+                </div>
+                <div class="panel-body">
+                    <div id="re" style="font-family: Courier New, Courier, monospace"></div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

@@ -25,21 +25,13 @@ import sqlite3
 from flask import Flask, request, url_for, render_template, flash, Response, redirect
 from contextlib import closing
 import egret_api
-from werkzeug import secure_filename
 
 # global variables (for sessions)
 session = [] # Holds all of the strings currently being tested against the regex
-allPass = [] # Currently passing strings from session
-allFail = [] # Currently failing strings from session
+formData = {}
 
 # configuration
 DEBUG = True
-UPLOAD_FOLDER = '/tmp/'
-ALLOWED_EXTENSIONS = set(['txt'])
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 # create our application
 app = Flask(__name__)
@@ -47,73 +39,81 @@ app.config.from_object(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def process_submit():
-    regex = request.args.get('regex')
-    testString = request.args.get('testString')
-    showGroups = request.args.get('showGroups')
-    sessionBox = request.args.get('sessionBox')
-    upload = request.args.get('upload') 
+    global session
+
+    regex = request.form.get('regex')
+    testString = request.form.get('testString')
+    showGroups = request.form.get('showGroups')
+    formData['regex'] = regex
+    formData['testString'] = testString
+    formData['showGroups'] = showGroups
     
-    if upload:
-        uploadedStrings = upload.splitlines()
-        for item in uploadedStrings:
+    addedStrs = []
+    if "addSelectedAccept" in request.form:
+        addedStrs = request.form.getlist("accept")
+    elif "addAccept" in request.form:
+        addedStrs = formData['passList']
+    elif "addSelectedReject" in request.form:
+        addedStrs = request.form.getlist("reject")
+    elif "addReject" in request.form:
+        addedStrs = formData['failList']
+    elif "deleteSelected" in request.form:
+        deletedStrs = request.form.getlist("delete")
+        for s in deletedStrs:
+            session.remove(s)
+    elif "deleteAll" in request.form:
+        session = []
+
+    for item in addedStrs:
+        if item not in session:
             session.append(item)
+
+    # uploads strings to session
+    #upload = request.form.get('upload') 
+    #if upload:
+    #    uploadedStrings = upload.splitlines()
+    #    for item in uploadedStrings:
+    #        session.append(item)
 
     # empty regex --> return empty results
     if regex == None or regex == '':
-        return render_template('egret.html',
-                testString=testString, showGroups=showGroups, session=session, sessionBox=sessionBox)
+        formData['regex'] = ''
+        return render_template('egret.html', formData=formData, session=session)
     
     # run egret engine
-    (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex)
-    
-    
-    # add passing/failing strings to session if they aren't already,
-    # and if user wants them to be added
-    if sessionBox != "on":
-        for item in passList:
-            if item not in session: # avoids duplicates
-                session.append(item)
-        for item in failList:
-            if item not in session: # avoids duplicates
-                session.append(item)
+    (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex, session)
+    formData['passList'] = passList
+    formData['failList'] = failList
+    formData['errorMsg'] = errorMsg
+    formData['warnings'] = warnings
     
     # get group information
     if showGroups == "on" and errorMsg == None:
         (groupHdr, groupRows, numGroups) = egret_api.get_group_info(regex, passList)
+        formData['groupHdr'] = groupHdr
+        formData['groupRows'] = groupRows
+        formData['numGroups'] = groupRows
     else:
-        groupHdr = groupRows = numGroups = None
+        formData['groupHdr'] = None
+        formData['groupRows'] = None
+        formData['numGroups'] = None
     
     
     # determine if test string is accepted or not
     if testString != None and testString != '' and errorMsg == None:
-        testResult = egret_api.run_test_string(regex, testString)
+        formData['testResult'] = egret_api.run_test_string(regex, testString)
     else:
-        testResult = ''
-        
-    # clear previous results
-    allPass[:] = []
-    allFail[:] = []
+        formData['testResult'] = ''
     
-    # if not adding to session, still need to test these strings
-    if sessionBox == "on":
-        for item in passList:
-            allPass.append(item)
-        for item in failList:
-            allFail.append(item)
-        
-    # retest each string
-    for item in session:
-        if egret_api.run_test_string(regex, item) == "ACCEPTED":
-            allPass.append(item)
-        else:
-            allFail.append(item)
+    # clear previous results
+    current = sorted(list(set(passList) | set(failList)))
     
     # render webpage with current session
-    return render_template('egret.html',
-            regex=regex, testString=testString, showGroups=showGroups,
-            passList=passList, failList=failList, errorMsg=errorMsg, warnings=warnings,
-            groupHdr=groupHdr, groupRows=groupRows, numGroups=numGroups,
-            testResult=testResult, sessionBox=sessionBox, session=session, allPass=allPass, allFail=allFail)
+    return render_template('egret.html', formData=formData, session=session)
+            
+@app.route('/regex_gen', methods=['GET', 'POST'])
+def generate_regex():
+    return render_template('regex_gen.html')
 
 @app.route('/download')
 def download_file():
@@ -129,16 +129,13 @@ def download_file():
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
     return render_template('upload.html')
-   
-@app.route('/clear')
-def clear():
-    session[:] = []
-    return render_template('egret.html')
 
-# strings to test with
-# \b\d{3}[-.]?\d{3}[-.]?\d{4}\b phone numbers
-# (?:#|0x)?(?:[0-9A-F]{2}){3,4} colors
+   
+# Some sample test strings
+# \b\d{3}[-.]?\d{3}[-.]?\d{4}\b   phone numbers
+# (?:#|0x)?(?:[0-9A-F]{2}){3,4}   colors
+# (IMG\d+)\.png                   names + .png (useful for testing groups)
             
 if __name__ == '__main__':
-    # app.run() # for default host/port
+    #app.run() # for default host/port
     app.run(host="0.0.0.0",port=8080) # for my dev environment
