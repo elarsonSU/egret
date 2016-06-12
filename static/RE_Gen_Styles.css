@@ -8,3 +8,7 @@ label.unbolded {
     max-width: 100%;
     font-weight: unset;
 }
+
+.floats-field.form-item {
+    margin-top: 7px;
+}
