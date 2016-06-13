@@ -35,6 +35,10 @@ function createRegularExpression(){
         expression = createRegularExpressionInt();
     }else if(document.forms['create-re']['re-type'][1].checked){
         expression = createRegularExpressionDate();
+    }else if(document.forms['create-re']['re-type'][2].checked){
+        expression = createRegularExpressionFloat();
+    }else if(document.forms['create-re']['re-type'][3].checked){
+        expression = createRegularExpressionPhone();
     }
     
     document.getElementById("re").innerHTML = expression;
@@ -165,6 +169,41 @@ function createRegularExpressionInt(){
     
 }
 
+function createRegularExpressionFloat(){
+    var maxDigits = document.forms["create-re"]["Max_dig"].value;
+    var maxPostDigits = document.forms['create-re']['Max_dig_post_dec'].value;
+    var expression = "";
+    var trailingZeroes = "";
+    var maxDigitsPostDec = "[0-9]*";
+    
+    if((maxDigits != '' && isNaN(maxDigits)) || (maxPostDigits != '' && isNaN(maxPostDigits))){
+        expression = "Maximum Digits Before and After Decimal must be numerical.";//error
+        return expression;
+    }
+    
+    expression = createRegularExpressionInt(); //builds pre-decimal portion
+    
+    if(document.forms['create-re']['trailingZeroes'].checked){
+        trailingZeroes = "0"
+    }else{
+        trailingZeroes = '1';
+    }
+    
+    if(maxPostDigits != '' && !isNaN(maxPostDigits)){
+        maxPostDigits = parseInt(maxPostDigits) - 1;
+        if(maxPostDigits !== 0){
+            maxDigitsPostDec = "[0-9]{0," + maxPostDigits + "}";
+        }else{
+            maxDigitsPostDec = "";
+        }
+    }
+    
+    expression += "([.])(0|" + maxDigitsPostDec + "[" + trailingZeroes + "-9])";
+    
+    return expression;
+    
+}
+
 function createRegularExpressionPhone(){
     var expression = "";
     var multipleFormats = false;
@@ -203,6 +242,8 @@ function createRegularExpressionPhone(){
     }
     return expression;
 }
+
+
 
 function swapNegZero(){
     if(document.forms["create-re"]["negative"].checked){
