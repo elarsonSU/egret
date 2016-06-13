@@ -8,12 +8,23 @@ function selectForm(){
     if(document.forms['create-re']['re-type'][0].checked){
         $("#ints").removeClass("hide");
         $("#dates").addClass("hide");
+        $(".floats-field").addClass("hide");
+        document.getElementById("max-label").innerHTML = 'Max Digits: <span title="This field is required." class="form-required">*</span>';
+        $("#phone-number").addClass("hide");
     }else if(document.forms['create-re']['re-type'][1].checked){
         $("#ints").addClass("hide");
         $("#dates").removeClass("hide");
+        $("#phone-number").addClass("hide");
     }else if(document.forms['create-re']['re-type'][2].checked){
         $("#ints").removeClass("hide");
         $("#dates").addClass("hide");
+        $(".floats-field").removeClass("hide");
+        document.getElementById("max-label").innerHTML = 'Max Digits Before Decimal: <span title="This field is required." class="form-required">*</span>';
+        $("#phone-number").addClass("hide");
+    }else if(document.forms['create-re']['re-type'][3].checked){
+        $("#ints").addClass('hide');
+        $("#dates").addClass("hide");
+        $("#phone-number").removeClass("hide");
     }
 }
 
@@ -152,6 +163,45 @@ function createRegularExpressionInt(){
     
     return expression;
     
+}
+
+function createRegularExpressionPhone(){
+    var expression = "";
+    var multipleFormats = false;
+    var areaCode = document.forms["create-re"]["area-code"].value;
+    
+    if(!document.forms["create-re"]["full-format"].checked
+            && !document.forms["create-re"]["dash-format"].checked
+            && !document.forms["create-re"]["unformatted"].checked){
+        expression = "You must select a format.";
+        return expression;
+    }
+    
+    if(areaCode.length != 3 || isNaN(areaCode)){
+        areaCode = "[0-9]{3}";
+    }
+    
+    if(document.forms['create-re']['full-format'].checked){
+        multipleFormats = true;
+        expression += "(([(]" + areaCode + "[)])([ ])([0-9]{3})([-])([0-9]{4}))";
+    }
+    
+    if(document.forms["create-re"]["dash-format"].checked){
+        if(multipleFormats){
+            expression += "|";
+        }else{
+            multipleFormats = true;
+        }
+        expression += "((" + areaCode + ")([-])([0-9]{3})([-])([0-9]{4}))";
+    }
+    
+    if(document.forms["create-re"]["unformatted"].checked){
+        if(multipleFormats){
+            expression += "|";
+        }
+        expression += "((" + areaCode + ")([0-9]{3})([0-9]{4}))";
+    }
+    return expression;
 }
 
 function swapNegZero(){
