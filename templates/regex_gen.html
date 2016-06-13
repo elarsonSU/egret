@@ -42,6 +42,10 @@ and open the template in the editor.
                                     <label for="edit-max-dig" class="unbolded">Maximum Digits: <span title="This field is required." class="form-required">*</span></label>
                                     <input onchange="" type="text" class="form-text required" size="4" maxlength="128" id="edit-max-dig" name="Max_dig" style="font-family: Courier New, Courier, monospace">
                                 </div>
+                                <div id="edit-max-dig-post-dec-wrapper" class="floats-field form-item hide"> 
+                                    <label for="edit-max-dig-post-dec" class="unbolded">Maximum Digits After Decimal: <span title="This field is required." class="form-required">*</span></label>
+                                    <input onchange="" type="text" class="form-text required" size="4" maxlength="128" id="edit-max-dig-post-dec" name="Max_dig_post_dec" style="font-family: Courier New, Courier, monospace">
+                                </div>
                                 <div id="switch-negative-wraper" class='form-item'>
                                     <label for="switch-negative" class="unbolded">Allow Negative Values: <span title="This field is required." class="form-required">*</span></label>
                                     <input onchange='swapNegZero()' type="checkbox" class="form-text required" id='switch-negative' value="yes_negative" name="negative">
@@ -53,6 +57,10 @@ and open the template in the editor.
                                 <div id="switch-leading-zero-wrapper" class='form-item'>
                                     <label for="switch-leading-zero" class="unbolded">Allow Leading Zeroes: <span title="This field is required." class="form-required">*</span></label>
                                     <input onchange='' type="checkbox" class="form-check required" id='switch-leading-zero' value="yes_zeroes" name="leadingZeroes">
+                                </div>
+                                <div id="switch-trailing-zero-wrapper" class='float-field form-item hide'>
+                                    <label for="switch-trailing-zero" class="unbolded">Allow Trailing Zeroes: <span title="This field is required." class="form-required">*</span></label>
+                                    <input onchange='' type="checkbox" class="form-check required" id='switch-trailing-zero' value="yes_zeroes" name="trailingZeroes">
                                 </div>
                                 <div id="comma-separator-wraper" class="form-item">
                                     <label for="comma-separator" class="unbolded">Comma Formating: <span title="This field is required." class="form-required">*</span></label>
