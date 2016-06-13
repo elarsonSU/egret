@@ -30,6 +30,7 @@ and open the template in the editor.
                             <div class="panel-body">
                                 <input onchange="selectForm()" type="radio" class="form-radio re-type" name="re-type" value="integer" checked> Integer
                                 <input onchange="selectForm()" type="radio" class="form-radio re-type" name="re-type" value="date"> Date
+                                <input onchange="selectForm()" type="radio" class="form-radio re-type" name="re-type" value="float"> Float
                                 <input onchange="selectForm()" type="radio" class="form-radio re-type" name="re-type" value="phone"> US Phone Number
                             </div>
                     </div>
@@ -40,7 +41,7 @@ and open the template in the editor.
                         <div class="panel-body">
                             <div id='ints' class="">
                                 <div id="edit-max-dig-wrapper" class="form-item">
-                                    <label for="edit-max-dig" class="unbolded">Maximum Digits: <span title="This field is required." class="form-required">*</span></label>
+                                    <label for="edit-max-dig" id="max-label" class="unbolded">Maximum Digits: <span title="This field is required." class="form-required">*</span></label>
                                     <input onchange="" type="text" class="form-text required" size="4" maxlength="128" id="edit-max-dig" name="Max_dig" style="font-family: Courier New, Courier, monospace">
                                 </div>
                                 <div id="edit-max-dig-post-dec-wrapper" class="floats-field form-item hide"> 
@@ -136,6 +137,7 @@ and open the template in the editor.
                                     </div>
                                 </div>
                             </div>
+                            
                             <br>
                             <input type="button" onclick="createRegularExpression()" class="form-submit btn btn-primary" value="Generate" id="edit-submit" name="op">
                         </div>
