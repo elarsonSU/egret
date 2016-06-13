@@ -102,6 +102,20 @@ and open the template in the editor.
                                         <input onchange="" type="radio" class="form-radio" name="year-selection" value="both"> Both
                                     </div>
                                 </div>
+                                <div id="edit-separator-wrapper" class="form-item">
+                                    <label for="edit-separator" class="unbolded">Select Separator : <span title="This field is required." class="form-required">*</span></label>
+                                    <div>
+                                        <input onchange='' type="checkbox" class="form-check required" id='edit-separator' value="yes_slash_sep" name="foreward-slash-sep" checked> /
+                                    </div>
+                                    <div>
+                                        <input onchange='' type="checkbox" class="form-check required" id='edit-separator' value="yes_period_sep" name="period-sep"> .
+                                    </div>
+                                    <div>
+                                        <input onchange='' type="checkbox" class="form-check required" id='edit-separator' value="yes_sep_check" name="custom-sep-check">
+                                        <label for="edit-max-dig" id="max-label" class="unbolded">Custom Separators (No Spaces Between Separators): </label>
+                                        <input onchange="" type="text" class="form-text required" size="6" maxlength="128" id="edit-separator" name="custom-sep-input" style="font-family: Courier New, Courier, monospace">
+                                    </div>
+                                </div>
                             </div>
                             <br>
                             <input type="button" onclick="createRegularExpression()" class="form-submit btn btn-primary" value="Generate" id="edit-submit" name="op">
