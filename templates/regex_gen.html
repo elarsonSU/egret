@@ -30,6 +30,8 @@ and open the template in the editor.
                             <div class="panel-body">
                                 <input onchange="selectForm()" type="radio" class="form-radio re-type" name="re-type" value="integer" checked> Integer
                                 <input onchange="selectForm()" type="radio" class="form-radio re-type" name="re-type" value="date"> Date
+                                <input onchange="selectForm()" type="radio" class="form-radio re-type" name="re-type" value="float"> Float
+                                <input onchange="selectForm()" type="radio" class="form-radio re-type" name="re-type" value="phone"> US Phone Number
                             </div>
                     </div>
                     <div class="panel panel-info">
@@ -39,7 +41,7 @@ and open the template in the editor.
                         <div class="panel-body">
                             <div id='ints' class="">
                                 <div id="edit-max-dig-wrapper" class="form-item">
-                                    <label for="edit-max-dig" class="unbolded">Maximum Digits: <span title="This field is required." class="form-required">*</span></label>
+                                    <label for="edit-max-dig" id="max-label" class="unbolded">Maximum Digits: <span title="This field is required." class="form-required">*</span></label>
                                     <input onchange="" type="text" class="form-text required" size="4" maxlength="128" id="edit-max-dig" name="Max_dig" style="font-family: Courier New, Courier, monospace">
                                 </div>
                                 <div id="edit-max-dig-post-dec-wrapper" class="floats-field form-item hide"> 
@@ -102,7 +104,41 @@ and open the template in the editor.
                                         <input onchange="" type="radio" class="form-radio" name="year-selection" value="both"> Both
                                     </div>
                                 </div>
+                                <div id="edit-separator-wrapper" class="form-item">
+                                    <label for="edit-separator" class="unbolded">Select Separator : <span title="This field is required." class="form-required">*</span></label>
+                                    <div>
+                                        <input onchange='' type="checkbox" class="form-check required" id='edit-separator' value="yes_slash_sep" name="foreward-slash-sep" checked> /
+                                    </div>
+                                    <div>
+                                        <input onchange='' type="checkbox" class="form-check required" id='edit-separator' value="yes_period_sep" name="period-sep"> .
+                                    </div>
+                                    <div>
+                                        <input onchange='' type="checkbox" class="form-check required" id='edit-separator' value="yes_sep_check" name="custom-sep-check">
+                                        <label for="edit-max-dig" id="max-label" class="unbolded">Custom Separators (No Spaces Between Separators): </label>
+                                        <input onchange="" type="text" class="form-text required" size="6" maxlength="128" id="edit-separator" name="custom-sep-input" style="font-family: Courier New, Courier, monospace">
+                                    </div>
+                                </div>
                             </div>
+                            
+                            <div id="phone-number" class="hide">
+                                <div id="edit-area-code-wrapper" class="form-item">
+                                    <label for="edit-area-code" class="unbolded">Area Code: </label>
+                                    <input onchange="" type="text" class="form-text required" size="5" maxlength="3" id="edit-area-code" name="area-code" style="font-family: Courier New, Courier, monospace">
+                                </div>
+                                <div id="edit-phone-format-wrapper" class="form-item">
+                                    <label for="edit-phone-format" class="unbolded">Select Formats: <span title="This field is required." class="form-required">*</span></label>
+                                    <div>
+                                        <input onchange='' type="checkbox" class="form-check required" id='edit-phone-format' value="yes_full_format" name="full-format" checked> (012) 345-6789
+                                    </div>
+                                    <div>
+                                        <input onchange='' type="checkbox" class="form-check required" id='edit-phone-format' value="yes_dash_format" name="dash-format"> 012-345-6789
+                                    </div>
+                                    <div>
+                                        <input onchange='' type="checkbox" class="form-check required" id='edit-phone-format' value="yes_unformatted" name="unformatted"> 0123456789
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <br>
                             <input type="button" onclick="createRegularExpression()" class="form-submit btn btn-primary" value="Generate" id="edit-submit" name="op">
                         </div>
