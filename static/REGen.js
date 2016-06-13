@@ -10,14 +10,21 @@ function selectForm(){
         $("#dates").addClass("hide");
         $(".floats-field").addClass("hide");
         document.getElementById("max-label").innerHTML = 'Max Digits: <span title="This field is required." class="form-required">*</span>';
+        $("#phone-number").addClass("hide");
     }else if(document.forms['create-re']['re-type'][1].checked){
         $("#ints").addClass("hide");
         $("#dates").removeClass("hide");
+        $("#phone-number").addClass("hide");
     }else if(document.forms['create-re']['re-type'][2].checked){
         $("#ints").removeClass("hide");
         $("#dates").addClass("hide");
         $(".floats-field").removeClass("hide");
         document.getElementById("max-label").innerHTML = 'Max Digits Before Decimal: <span title="This field is required." class="form-required">*</span>';
+        $("#phone-number").addClass("hide");
+    }else if(document.forms['create-re']['re-type'][3].checked){
+        $("#ints").addClass('hide');
+        $("#dates").addClass("hide");
+        $("#phone-number").removeClass("hide");
     }
 }
 
@@ -30,6 +37,8 @@ function createRegularExpression(){
         expression = createRegularExpressionDate();
     }else if(document.forms['create-re']['re-type'][2].checked){
         expression = createRegularExpressionFloat();
+    }else if(document.forms['create-re']['re-type'][3].checked){
+        expression = createRegularExpressionPhone();
     }
     
     document.getElementById("re").innerHTML = expression;
@@ -40,6 +49,35 @@ function createRegularExpressionDate(){
     var months = "(1[0-2]";
     var days = "([1-2][0-9]|3[0-1]";
     var years;
+    var sep = "[";
+    var customSeps = document.forms['create-re']['custom-sep-input'].value;
+    
+    if(!document.forms['create-re']['foreward-slash-sep'].checked
+            && !document.forms['create-re']['period-sep'].checked
+            && !document.forms['create-re']['custom-sep-check'].checked){
+        expression = "Please select a separator.";
+        return expression;
+    }
+    
+    if(document.forms['create-re']['foreward-slash-sep'].checked){
+        sep += "/";
+    }
+    
+    if(document.forms['create-re']['period-sep'].checked){
+        sep += ".";
+    }
+    
+    if(document.forms['create-re']['custom-sep-check'].checked){
+        for(var i = 0; i < customSeps.length; i++){
+            if(customSeps[i] == '^' || customSeps[i] == '\\'){
+                sep += "\\" + customSeps[i];
+            }else{
+                sep += customSeps[i];
+            }
+        }
+    }
+    
+    sep += "]";
     
     if(document.forms['create-re']['year-selection'][0].checked){
         years = "([0-9]{2})";
@@ -58,9 +96,9 @@ function createRegularExpressionDate(){
     }
     
     if(document.forms['create-re']['edit-format'][0].checked){
-        expression = months + '/' + days + '/' + years;//mdy
+        expression = months + sep + days + sep + years;//mdy
     }else{
-        expression = days + '/' + months + '/' + years;//dmy
+        expression = days + sep + months + sep + years;//dmy
     }
     
     return expression;
@@ -130,6 +168,7 @@ function createRegularExpressionInt(){
     return expression;
     
 }
+
 function createRegularExpressionFloat(){
     var maxDigits = document.forms["create-re"]["Max_dig"].value;
     var maxPostDigits = document.forms['create-re']['Max_dig_post_dec'].value;
@@ -164,6 +203,47 @@ function createRegularExpressionFloat(){
     return expression;
     
 }
+
+function createRegularExpressionPhone(){
+    var expression = "";
+    var multipleFormats = false;
+    var areaCode = document.forms["create-re"]["area-code"].value;
+    
+    if(!document.forms["create-re"]["full-format"].checked
+            && !document.forms["create-re"]["dash-format"].checked
+            && !document.forms["create-re"]["unformatted"].checked){
+        expression = "You must select a format.";
+        return expression;
+    }
+    
+    if(areaCode.length != 3 || isNaN(areaCode)){
+        areaCode = "[0-9]{3}";
+    }
+    
+    if(document.forms['create-re']['full-format'].checked){
+        multipleFormats = true;
+        expression += "(([(]" + areaCode + "[)])([ ])([0-9]{3})([-])([0-9]{4}))";
+    }
+    
+    if(document.forms["create-re"]["dash-format"].checked){
+        if(multipleFormats){
+            expression += "|";
+        }else{
+            multipleFormats = true;
+        }
+        expression += "((" + areaCode + ")([-])([0-9]{3})([-])([0-9]{4}))";
+    }
+    
+    if(document.forms["create-re"]["unformatted"].checked){
+        if(multipleFormats){
+            expression += "|";
+        }
+        expression += "((" + areaCode + ")([0-9]{3})([0-9]{4}))";
+    }
+    return expression;
+}
+
+
 
 function swapNegZero(){
     if(document.forms["create-re"]["negative"].checked){
