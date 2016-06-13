@@ -8,9 +8,16 @@ function selectForm(){
     if(document.forms['create-re']['re-type'][0].checked){
         $("#ints").removeClass("hide");
         $("#dates").addClass("hide");
+        $(".floats-field").addClass("hide");
+        document.getElementById("max-label").innerHTML = 'Max Digits: <span title="This field is required." class="form-required">*</span>';
     }else if(document.forms['create-re']['re-type'][1].checked){
         $("#ints").addClass("hide");
         $("#dates").removeClass("hide");
+    }else if(document.forms['create-re']['re-type'][2].checked){
+        $("#ints").removeClass("hide");
+        $("#dates").addClass("hide");
+        $(".floats-field").removeClass("hide");
+        document.getElementById("max-label").innerHTML = 'Max Digits Before Decimal: <span title="This field is required." class="form-required">*</span>';
     }
 }
 
@@ -21,6 +28,8 @@ function createRegularExpression(){
         expression = createRegularExpressionInt();
     }else if(document.forms['create-re']['re-type'][1].checked){
         expression = createRegularExpressionDate();
+    }else if(document.forms['create-re']['re-type'][2].checked){
+        expression = createRegularExpressionFloat();
     }
     
     document.getElementById("re").innerHTML = expression;
@@ -117,6 +126,40 @@ function createRegularExpressionInt(){
         expression += "([" + leadingZeroes + "-9]" + formattedMaxDigitsOverflow;
         expression += "" + formattedMaxDigitsGroups + ")))";
     }
+    
+    return expression;
+    
+}
+function createRegularExpressionFloat(){
+    var maxDigits = document.forms["create-re"]["Max_dig"].value;
+    var maxPostDigits = document.forms['create-re']['Max_dig_post_dec'].value;
+    var expression = "";
+    var trailingZeroes = "";
+    var maxDigitsPostDec = "[0-9]*";
+    
+    if((maxDigits != '' && isNaN(maxDigits)) || (maxPostDigits != '' && isNaN(maxPostDigits))){
+        expression = "Maximum Digits Before and After Decimal must be numerical.";//error
+        return expression;
+    }
+    
+    expression = createRegularExpressionInt(); //builds pre-decimal portion
+    
+    if(document.forms['create-re']['trailingZeroes'].checked){
+        trailingZeroes = "0"
+    }else{
+        trailingZeroes = '1';
+    }
+    
+    if(maxPostDigits != '' && !isNaN(maxPostDigits)){
+        maxPostDigits = parseInt(maxPostDigits) - 1;
+        if(maxPostDigits !== 0){
+            maxDigitsPostDec = "[0-9]{0," + maxPostDigits + "}";
+        }else{
+            maxDigitsPostDec = "";
+        }
+    }
+    
+    expression += "([.])(0|" + maxDigitsPostDec + "[" + trailingZeroes + "-9])";
     
     return expression;
     
