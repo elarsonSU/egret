@@ -40,15 +40,30 @@ app.config.from_object(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def process_submit():
     global session
-
-    regex = request.form.get('regex')
-    testString = request.form.get('testString')
-    showGroups = request.form.get('showGroups')
-    formData['regex'] = regex
-    formData['testString'] = testString
-    formData['showGroups'] = showGroups
     
+    # get data from text boxes
+    regex = request.form.get('regex')
+    baseSubstr = request.form.get('baseSubstr')
+    testString = request.form.get('testString')
+    formData['regex'] = regex
+    formData['baseSubstr'] = baseSubstr
+    formData['testString'] = testString
+
+    # process checkbox options
+    if "showGroups" in request.form:
+      formData['showGroups'] = True
+    else:
+      formData['showGroups'] = False
+    if "useDiffBase" in request.form:
+      formData['useDiffBase'] = True
+    else:
+      formData['useDiffBase'] = False
+      baseSubstr = "evil"
+        
+    # process saved string options
     addedStrs = []
+    if "addTestString" in request.form:
+        addedStrs = [ testString ]
     if "addSelectedAccept" in request.form:
         addedStrs = request.form.getlist("accept")
     elif "addAccept" in request.form:
@@ -78,17 +93,19 @@ def process_submit():
     # empty regex --> return empty results
     if regex == None or regex == '':
         formData['regex'] = ''
+        formData['baseSubstr'] = ''
+        formData['testString'] = ''
         return render_template('egret.html', formData=formData, session=session)
     
     # run egret engine
-    (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex, session)
+    (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex, baseSubstr, session)
     formData['passList'] = passList
     formData['failList'] = failList
     formData['errorMsg'] = errorMsg
     formData['warnings'] = warnings
     
     # get group information
-    if showGroups == "on" and errorMsg == None:
+    if formData['showGroups'] and errorMsg == None:
         (groupHdr, groupRows, numGroups) = egret_api.get_group_info(regex, passList)
         formData['groupHdr'] = groupHdr
         formData['groupRows'] = groupRows

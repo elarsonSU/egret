@@ -6,7 +6,7 @@ and open the template in the editor.
 -->
 <html>
     <head>
-        <title>GGRE Generation of Good Regular Expressions</title>
+        <title>GGRE: Generation of Good Regular Expressions</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script> <!--JQUERY-->
@@ -16,10 +16,13 @@ and open the template in the editor.
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
     </head>
     <body onload="document.forms['create-re'].reset();">
+        <ul class="nav nav-tabs" role="tablist">
+          <li role="presentation"><a href="/">EGRET: Evil Generation of Regular Expression Tests</a></li>
+          <li role="presentation" class="active"><a href="/regex_gen">GGRE: Good Generation of Regular Expressions</a></li>
+	</ul>
+
         <div class="container">
-            <div class='panel panel-primary'>
-                <div class="panel-heading"><h1>REGULAR EXPRESSION GENERATOR</h1></div>
-            </div>
+            <h2>GGRE: Good Generation of Regular Expressions</h2>
             <div id="form-wrapper">
                 <form id="create-re" name="create-re">
                     <div class='panel panel-info'>
@@ -150,6 +153,17 @@ and open the template in the editor.
                 </div>
                 <div class="panel-body">
                     <div id="re" style="font-family: Courier New, Courier, monospace"></div>
+                </div>
+            </div>
+
+            <div class="panel panel-danger">
+                <div class="panel-heading">
+                    <h4 class="panel-title">About GGRE</h4>
+                </div>
+
+                <div class="panel-body">
+                  <p>Copyright (C) 2016 Bryan Herr and Eric Larson</p>
+                  <p>Program maintained by Eric Larson (elarson@seattleu.edu) at Seattle University</p>
                 </div>
             </div>
         </div>
