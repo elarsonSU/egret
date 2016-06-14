@@ -28,7 +28,12 @@ import egret_api
 
 # global variables (for sessions)
 session = [] # Holds all of the strings currently being tested against the regex
-formData = {}
+data = {}
+data['regex'] = ''
+data['baseSubstr'] = ''
+data['testString'] = ''
+data['showGroups'] = False
+data['useDiffBase'] = False
 
 # configuration
 DEBUG = True
@@ -42,46 +47,40 @@ def process_submit():
     global session
     
     # get data from text boxes
-    regex = request.form.get('regex')
-    baseSubstr = request.form.get('baseSubstr')
-    testString = request.form.get('testString')
-    formData['regex'] = regex
-    formData['baseSubstr'] = baseSubstr
-    formData['testString'] = testString
+    if 'regex' in request.form:
+        data['regex'] = request.form.get('regex')
+    if 'baseSubstr' in request.form:
+        data['baseSubstr'] = request.form.get('baseSubstr')
+    if 'testString' in request.form:
+        data['testString'] = request.form.get('testString')
 
     # process checkbox options
-    if "showGroups" in request.form:
-      formData['showGroups'] = True
-    else:
-      formData['showGroups'] = False
-    if "useDiffBase" in request.form:
-      formData['useDiffBase'] = True
-    else:
-      formData['useDiffBase'] = False
-      baseSubstr = "evil"
+    if request.method == 'POST':
+        data['showGroups'] = 'showGroups' in request.form
+        data['useDiffBase'] = 'useDiffBase' in request.form
         
     # process saved string options
     addedStrs = []
-    if "addTestString" in request.form:
-        addedStrs = [ testString ]
-    if "addSelectedAccept" in request.form:
-        addedStrs = request.form.getlist("accept")
-    elif "addAccept" in request.form:
-        addedStrs = formData['passList']
-    elif "addSelectedReject" in request.form:
-        addedStrs = request.form.getlist("reject")
-    elif "addReject" in request.form:
-        addedStrs = formData['failList']
-    elif "deleteSelected" in request.form:
-        deletedStrs = request.form.getlist("delete")
-        for s in deletedStrs:
-            session.remove(s)
-    elif "deleteAll" in request.form:
-        session = []
+    if 'addTestString' in request.form:
+      addedStrs = [ testString ]
+    elif 'addSelectedAccept' in request.form:
+      addedStrs = request.form.getlist('accept')
+    elif 'addAccept' in request.form:
+      addedStrs = data['passList']
+    elif 'addSelectedReject' in request.form:
+      addedStrs = request.form.getlist('reject')
+    elif 'addReject' in request.form:
+      addedStrs = data['failList']
+    elif 'deleteSelected' in request.form:
+      deletedStrs = request.form.getlist('delete')
+      for s in deletedStrs:
+        session.remove(s)
+    elif 'deleteAll' in request.form:
+      session = []
 
     for item in addedStrs:
-        if item not in session:
-            session.append(item)
+      if item not in session:
+        session.append(item)
 
     # uploads strings to session
     #upload = request.form.get('upload') 
@@ -91,42 +90,34 @@ def process_submit():
     #        session.append(item)
 
     # empty regex --> return empty results
-    if regex == None or regex == '':
-        formData['regex'] = ''
-        formData['baseSubstr'] = ''
-        formData['testString'] = ''
-        return render_template('egret.html', formData=formData, session=session)
+    if data['regex'] == '':
+      return render_template('egret.html', data=data, session=session)
     
     # run egret engine
-    (passList, failList, errorMsg, warnings) = egret_api.run_egret(regex, baseSubstr, session)
-    formData['passList'] = passList
-    formData['failList'] = failList
-    formData['errorMsg'] = errorMsg
-    formData['warnings'] = warnings
+    if data['useDiffBase']:
+      baseSubstr = data['baseSubstr']
+    else:
+      baseSubstr = 'evil'
+    (data['passList'], data['failList'], data['errorMsg'], data['warnings']) = \
+        egret_api.run_egret(data['regex'], baseSubstr, session)
     
     # get group information
-    if formData['showGroups'] and errorMsg == None:
-        (groupHdr, groupRows, numGroups) = egret_api.get_group_info(regex, passList)
-        formData['groupHdr'] = groupHdr
-        formData['groupRows'] = groupRows
-        formData['numGroups'] = groupRows
+    if data['showGroups'] and data['errorMsg'] == None:
+        (data['groupHdr'], data['groupRows'], data['numGroups']) = \
+            egret_api.get_group_info(data['regex'], data['passList'])
     else:
-        formData['groupHdr'] = None
-        formData['groupRows'] = None
-        formData['numGroups'] = None
+        (data['groupHdr'], data['groupRows'], data['numGroups']) = \
+            (None, None, None)
     
     
     # determine if test string is accepted or not
-    if testString != None and testString != '' and errorMsg == None:
-        formData['testResult'] = egret_api.run_test_string(regex, testString)
+    if data['testString'] != '' and data['errorMsg'] == None:
+        data['testResult'] = egret_api.run_test_string(data['regex'], data['testString'])
     else:
-        formData['testResult'] = ''
+        data['testResult'] = ''
     
-    # clear previous results
-    current = sorted(list(set(passList) | set(failList)))
-    
-    # render webpage with current session
-    return render_template('egret.html', formData=formData, session=session)
+    # render webpage
+    return render_template('egret.html', data=data, session=session)
             
 @app.route('/regex_gen', methods=['GET', 'POST'])
 def generate_regex():
@@ -139,9 +130,9 @@ def download_file():
         data.append(item + '\n')
         
     return Response(data,
-                    mimetype="text/plain",
-                    headers={"Content-Disposition":
-                            "attachment;filename=session.txt"})
+                    mimetype='text/plain',
+                    headers={'Content-Disposition':
+                            'attachment;filename=session.txt'})
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
@@ -155,4 +146,4 @@ def upload_file():
             
 if __name__ == '__main__':
     #app.run() # for default host/port
-    app.run(host="0.0.0.0",port=8080) # for my dev environment
+    app.run(host='0.0.0.0',port=8080) # for my dev environment

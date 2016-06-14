@@ -9,7 +9,7 @@ function selectForm(){
         $("#ints").removeClass("hide");
         $("#dates").addClass("hide");
         $(".floats-field").addClass("hide");
-        document.getElementById("max-label").innerHTML = 'Max Digits: <span title="This field is required." class="form-required">*</span>';
+        document.getElementById("max-label").innerHTML = 'Maximum digits (leave blank for no limit):';
         $("#phone-number").addClass("hide");
     }else if(document.forms['create-re']['re-type'][1].checked){
         $("#ints").addClass("hide");
@@ -19,7 +19,7 @@ function selectForm(){
         $("#ints").removeClass("hide");
         $("#dates").addClass("hide");
         $(".floats-field").removeClass("hide");
-        document.getElementById("max-label").innerHTML = 'Max Digits Before Decimal: <span title="This field is required." class="form-required">*</span>';
+        document.getElementById("max-label").innerHTML = 'Max digits before decimal (leave blank for no limit):';
         $("#phone-number").addClass("hide");
     }else if(document.forms['create-re']['re-type'][3].checked){
         $("#ints").addClass('hide');
@@ -59,14 +59,32 @@ function createRegularExpressionDate(){
         return expression;
     }
     
-    if(document.forms['create-re']['group-labels'].checked){
-        months = "(?P&ltmonth&gt1[0-2]";
-        days = "(?P&ltday&gt[1-2][0-9]|3[0-1]";
-        years = "(?P&ltyear&gt";
+    months = "1[0-2]";
+    days = "3[0-1]|[1-2][0-9]";
+    if(document.forms['create-re']['enforce-zero'].checked){
+        months += "|0[1-9]";
+        days += "|0[1-9]";
     }else{
-        months = "(1[0-2]";
-        days = "([1-2][0-9]|3[0-1]";
-        years = "(";
+        months += "|0?[1-9]";
+        days += "|0?[1-9]";
+    }
+
+    if(document.forms['create-re']['year-selection'][0].checked){
+        years = "\\d{2}";
+    }else if(document.forms['create-re']['year-selection'][1].checked){
+        years = "\\d{4}";
+    }else{
+        years = "\\d{2}|\\d{4}";
+    }
+    
+    if(document.forms['create-re']['group-labels'].checked){
+        months = "(?P&ltmonth&gt" + months + ")";
+        days = "(?P&ltday&gt" + days + ")";
+        years = "(?P&ltyear&gt" + years + ")";
+    }else{
+        months = "(" + months + ")";
+        days = "(" + days + ")";
+        years = "(" + years + ")";
     }
     
     if(document.forms['create-re']['foreward-slash-sep'].checked){
@@ -88,22 +106,6 @@ function createRegularExpressionDate(){
     }
     
     sep += "])";
-    
-    if(document.forms['create-re']['year-selection'][0].checked){
-        years += "[0-9]{2})";
-    }else if(document.forms['create-re']['year-selection'][1].checked){
-        years += "[0-9]{4})";
-    }else{
-        years += "[0-9]{2}|[0-9]{4})";
-    }
-    
-    if(document.forms['create-re']['enforce-zero'].checked){
-        months += "|0[0-9])";
-        days += "|0[1-9])";
-    }else{
-        months += "|[0-9]|0[0-9])";
-        days += "|[1-9]|0[1-9])";
-    }
     
     if(document.forms['create-re']['edit-format'][0].checked){
         expression = months + sep + days + "(\\2)" + years;//mdy
@@ -164,12 +166,12 @@ function createRegularExpressionInt(){
             formattedMaxDigitsGroups = "";
     } // if nothing, no limit
     
-    if(commaSeparatorList[0].checked){  // YES
+    if(commaSeparatorList[2].checked){  // REQUIRED
         expression += "[" + leadingZeroes + "-9]" + formattedMaxDigitsOverflow;
         expression += "" + formattedMaxDigitsGroups + ")";
-    }else if(commaSeparatorList[1].checked){  //NO
+    }else if(commaSeparatorList[0].checked){  // NOT ALLOWED
         expression += "[" + leadingZeroes + "-9]" + unformattedMaxDigits + ")";
-    }else{  //BOTH
+    }else{  // ALLOWED BUT NOT REQUIRED
         expression += "(([" + leadingZeroes + "-9]" + unformattedMaxDigits + ")|";
         expression += "([" + leadingZeroes + "-9]" + formattedMaxDigitsOverflow;
         expression += "" + formattedMaxDigitsGroups + ")))";

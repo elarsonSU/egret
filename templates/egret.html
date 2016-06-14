@@ -19,19 +19,19 @@
 
   <h2> EGRET: Evil Generation of Regular Expression Tests </h2>
 
-  {% if formData['warnings'] %}
+  {% if data['warnings'] %}
   <div class="alert alert-warning">
     <strong>Warnings:</strong>
     <ul>
-      {% for warning in formData['warnings'] %}
+      {% for warning in data['warnings'] %}
       <li> {{ warning }} </li>
       {% endfor %}
     </ul>
   </div>
   {% endif %}
 
-  {% if formData['errorMsg'] %}
-  <p class="alert alert-danger"><strong>{{ formData['errorMsg'] }}</strong>
+  {% if data['errorMsg'] %}
+  <p class="alert alert-danger"><strong>{{ data['errorMsg'] }}</strong>
   {% endif %}
 
   <form action="{{ url_for('process_submit') }}" method=post>
@@ -43,23 +43,23 @@
       </div>
 
       <div class="panel-body">
-        <input class="form-control" type="text" name="regex" value="{{ formData['regex'] }}"
+        <input class="form-control" type="text" name="regex" value="{{ data['regex'] }}"
           style="font-family: Courier New, Courier, monospace">
 	<br>
-        {% if formData['showGroups'] %}
+        {% if data['showGroups'] %}
 	<input type="checkbox" name="showGroups" checked/>
         {% else %}
         <input type="checkbox" name="showGroups"/>
         {% endif %}
         Show groups for accepted strings
 	<br>
-	{% if formData['useDiffBase'] %}
+	{% if data['useDiffBase'] %}
 	<input type="checkbox" name="useDiffBase" checked/>
         {% else %}
         <input type="checkbox" name="useDiffBase"/>
         {% endif %}
 	Select base substring for strings such as \w+ (default is "evil"):
-        <input type="text" name="baseSubstr" value="{{ formData['baseSubstr'] }}"
+        <input type="text" name="baseSubstr" value="{{ data['baseSubstr'] }}"
           style="font-family: Courier New, Courier, monospace">
 	<br>
 	<br>
@@ -75,8 +75,8 @@
       </div>
 
       <div class="panel-body">
-        {% if formData['testString'] %}
-        <input class="form-control" type="text" name="testString" value="{{ formData['testString'] }}"
+        {% if data['testString'] %}
+        <input class="form-control" type="text" name="testString" value="{{ data['testString'] }}"
           style="font-family: Courier New, Courier, monospace"><br>
 	{% else %}
         <input class="form-control" type="text" name="testString"
@@ -86,10 +86,10 @@
         <input class="btn btn-primary" type=submit value=Test>
         <input class="btn btn-primary" type=submit name="addTestString" value="Save test string">
 
-        {% if formData['testResult'] == "ACCEPTED" %}
-	<h3><span class="label label-success"> {{ formData['testResult'] }} </span></h3>
-        {% elif formData['testResult'] == "REJECTED" %}
-	<h3><span class="label label-danger"> {{ formData['testResult'] }} </span></h3>
+        {% if data['testResult'] == "ACCEPTED" %}
+	<h3><span class="label label-success"> {{ data['testResult'] }} </span></h3>
+        {% elif data['testResult'] == "REJECTED" %}
+	<h3><span class="label label-danger"> {{ data['testResult'] }} </span></h3>
         {% endif %}
       </div>
 
@@ -103,24 +103,24 @@
 
       <div class="panel-body">
 
-        {% if formData['groupHdr'] %}
+        {% if data['groupHdr'] %}
         <table class="table table-bordered">
           <tr>
             <th></th>
-            <th colspan="{{ formData['numGroups'] }}" style="text-align:center">Groups</th>
+            <th colspan="{{ data['numGroups'] }}" style="text-align:center">Groups</th>
           </tr>
           <tr>
-            {% for item in formData['groupHdr'] %}
+            {% for item in data['groupHdr'] %}
             <th> {{ item }} </th>
             {% endfor %}
           </tr>
-          {% for row in formData['groupRows'] %}
+          {% for row in data['groupRows'] %}
           <tr>
 	    {% for item in row %}
 	    <td> 
               {% if loop.index == 1 %}
               {% if item in session %}
-              <input type=checkbox name=accept value="{{ item }}" checked>
+              <input type=checkbox name=accept value="{{ item }}" checked disabled>
               {% else %}
               <input type=checkbox name=accept value="{{ item }}">
               {% endif %}
@@ -134,9 +134,9 @@
 
         {% else %}
         <font face="Courier New, Courier, monospace">
-          {% for item in formData['passList'] %}
+          {% for item in data['passList'] %}
           {% if item in session %}
-          <input type=checkbox name=accept value="{{ item }}" checked>
+          <input type=checkbox name=accept value="{{ item }}" checked disabled>
           {% else %}
           <input type=checkbox name=accept value="{{ item }}">
           {% endif %}
@@ -160,9 +160,9 @@
 
       <div class="panel-body">
         <font face="Courier New, Courier, monospace">
-          {% for item in formData['failList'] %}
+          {% for item in data['failList'] %}
           {% if item in session %}
-          <input type=checkbox name=reject value="{{ item }}" checked>
+          <input type=checkbox name=reject value="{{ item }}" checked disabled>
           {% else %}
           <input type=checkbox name=reject value="{{ item }}">
           {% endif %}
@@ -193,55 +193,30 @@
         </font>
         <br>
         <a href="/download" class="btn btn-primary">Download session</a>
+        <!-- <a href="/upload" class="btn btn-primary">Upload session</a> -->
         <input class="btn btn-primary" type=submit name="deleteSelected" value="Remove selected strings">
         <input class="btn btn-primary" type=submit name="deleteAll" value="Remove all strings">
       </div>
 
     </div>
 
-    <!--
-    <div class="panel panel-info">
+    <div class="panel panel-danger">
 
       <div class="panel-heading">
-        <h2 class="panel-title">Saved Strings</h2>
+        <h4 class="panel-title">About EGRET</h4>
       </div>
 
-      <div class="panel panel-body">
-        <font face="Courier New, Courier, monospace">
-          {% for item in session %}
-          <input type=checkbox name=delete value="{{ item }}">
-          {{ item }}
-	  <br>
-          {% endfor %}
-        </font>
-        <br>
-        <a href="/download" class="btn btn-primary">Download session</a>
-        <a href="/upload" class="btn btn-primary">Upload session</a>
-        <input class="btn btn-primary" type=submit name="deleteSelected" value="Remove selected strings">
-        <input class="btn btn-primary" type=submit name="deleteAll" value="Remove all strings">
+      <div class="panel-body">
+        <p>Copyright (C) 2016 Eric Larson, Anna Kirk, and Nicolas Oman</p>
+        <p>Program maintained by Eric Larson (elarson@seattleu.edu) at Seattle University</p>
+        <p><a href="http://fac-staff.seattleu.edu/elarson/web/egret.htm">
+          Additional information about EGRET
+        </a></p>
       </div>
-      
 
-    </div>
-      -->
-  
-
-  <div class="panel panel-danger">
-
-    <div class="panel-heading">
-      <h4 class="panel-title">About EGRET</h4>
-    </div>
-
-    <div class="panel-body">
-      <p>Copyright (C) 2016 Eric Larson, Anna Kirk, and Nicolas Oman</p>
-      <p>Program maintained by Eric Larson (elarson@seattleu.edu) at Seattle University</p>
-      <p><a href="http://fac-staff.seattleu.edu/elarson/web/egret.htm">
-        Additional information about EGRET
-      </a></p>
     </div>
 
   </form> 
-  </div>
 
 </div>
 </body>
