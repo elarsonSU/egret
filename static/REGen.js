@@ -46,10 +46,10 @@ function createRegularExpression(){
 
 function createRegularExpressionDate(){
     var expression = "";
-    var months = "(1[0-2]";
-    var days = "([1-2][0-9]|3[0-1]";
+    var months;
+    var days;
     var years;
-    var sep = "[";
+    var sep = "([";
     var customSeps = document.forms['create-re']['custom-sep-input'].value;
     
     if(!document.forms['create-re']['foreward-slash-sep'].checked
@@ -57,6 +57,16 @@ function createRegularExpressionDate(){
             && !document.forms['create-re']['custom-sep-check'].checked){
         expression = "Please select a separator.";
         return expression;
+    }
+    
+    if(document.forms['create-re']['group-labels'].checked){
+        months = "(?P&ltmonth&gt1[0-2]";
+        days = "(?P&ltday&gt[1-2][0-9]|3[0-1]";
+        years = "(?P&ltyear&gt";
+    }else{
+        months = "(1[0-2]";
+        days = "([1-2][0-9]|3[0-1]";
+        years = "(";
     }
     
     if(document.forms['create-re']['foreward-slash-sep'].checked){
@@ -77,14 +87,14 @@ function createRegularExpressionDate(){
         }
     }
     
-    sep += "]";
+    sep += "])";
     
     if(document.forms['create-re']['year-selection'][0].checked){
-        years = "([0-9]{2})";
+        years += "[0-9]{2})";
     }else if(document.forms['create-re']['year-selection'][1].checked){
-        years = "([0-9]{4})";
+        years += "[0-9]{4})";
     }else{
-        years = "([0-9]{2}|[0-9]{4})";
+        years += "[0-9]{2}|[0-9]{4})";
     }
     
     if(document.forms['create-re']['enforce-zero'].checked){
@@ -96,9 +106,9 @@ function createRegularExpressionDate(){
     }
     
     if(document.forms['create-re']['edit-format'][0].checked){
-        expression = months + sep + days + sep + years;//mdy
+        expression = months + sep + days + "(\\2)" + years;//mdy
     }else{
-        expression = days + sep + months + sep + years;//dmy
+        expression = days + sep + months + "(\\2)" + years;//dmy
     }
     
     return expression;
