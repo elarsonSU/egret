@@ -46,6 +46,17 @@ run_engine(string regex, string base_substring, bool debug = false, bool stat = 
   clearWarnings();
 
   try {
+
+    // check base_substring
+    if (base_substring.length() < 2) {
+      throw EgretException("ERROR: Base substring must have at least two letters");
+    }
+    for (unsigned int i = 0; i < base_substring.length(); i++) {
+      if (!isalpha(base_substring[i])) {
+        throw EgretException("ERROR: Base substring can only contain letters");
+      }
+    }
+
     // initialize scanner with regex
     Scanner scanner;
     scanner.init(regex);

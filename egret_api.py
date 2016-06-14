@@ -21,8 +21,8 @@
 import re
 import egret_ext
 
-def run_egret(regexStr, testList):
-    inputStrs = egret_ext.run(regexStr, "evil", False, False)
+def run_egret(regexStr, baseSubstring, testList):
+    inputStrs = egret_ext.run(regexStr, baseSubstring, False, False)
     status = inputStrs[0]
     if status[0:5] == "ERROR":
         return ([], [], status, [])
