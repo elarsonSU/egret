@@ -1,19 +1,9 @@
-Web Interface:
-- Add ability to save tests for future runs (and clear this) [DONE]
-- Add ability to load tests (sessions) from a plaintext file [DONE]
-- Add tracking capabilities
-- Generate regular expressions from examples or wizard
-
 Command Line Interface:
 - Add exception handling to catch re.compile errors.
-
-Refactoring:
-- convert key structs into classes with public and private sections
 
 Enhancements:
 - Better duplicated character sets in character set warnings.
 - Add errors for carets and dollars inside loops such (^abc)+
-- Category for alphanumeric strings with some acceptable punctuation that permits only punctuation. 
 - String where all optional items (? and *) are not selected.
   * Misses single period on \d*\.\d*
 - Replace clear alphanumeric strings [\w+] with a word or number.
