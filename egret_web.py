@@ -45,6 +45,9 @@ app.config.from_object(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def process_submit():
     global session
+
+    print(request.method)
+    print(request.form)
     
     # get data from text boxes
     if 'regex' in request.form:
@@ -62,7 +65,7 @@ def process_submit():
     # process saved string options
     addedStrs = []
     if 'addTestString' in request.form:
-      addedStrs = [ testString ]
+      addedStrs = [ data['testString'] ]
     elif 'addSelectedAccept' in request.form:
       addedStrs = request.form.getlist('accept')
     elif 'addAccept' in request.form:
@@ -89,20 +92,21 @@ def process_submit():
     #    for item in uploadedStrings:
     #        session.append(item)
 
-    # empty regex --> return empty results
-    if data['regex'] == '':
-      return render_template('egret.html', data=data, session=session)
-    
     # run egret engine
     if data['useDiffBase']:
       baseSubstr = data['baseSubstr']
     else:
       baseSubstr = 'evil'
-    (data['passList'], data['failList'], data['errorMsg'], data['warnings']) = \
+      
+    if data['regex'] != '':
+      (data['passList'], data['failList'], data['errorMsg'], data['warnings']) = \
         egret_api.run_egret(data['regex'], baseSubstr, session)
+    else:
+      (data['passList'], data['failList'], data['errorMsg'], data['warnings']) = \
+        ([], [], None, None)
     
     # get group information
-    if data['showGroups'] and data['errorMsg'] == None:
+    if data['regex'] != '' and data['showGroups'] and data['errorMsg'] == None:
         (data['groupHdr'], data['groupRows'], data['numGroups']) = \
             egret_api.get_group_info(data['regex'], data['passList'])
     else:
@@ -111,7 +115,7 @@ def process_submit():
     
     
     # determine if test string is accepted or not
-    if data['testString'] != '' and data['errorMsg'] == None:
+    if data['regex'] != '' and data['testString'] != '' and data['errorMsg'] == None:
         data['testResult'] = egret_api.run_test_string(data['regex'], data['testString'])
     else:
         data['testResult'] = ''

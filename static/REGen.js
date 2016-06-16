@@ -97,7 +97,7 @@ function createRegularExpressionDate(){
     
     if(document.forms['create-re']['custom-sep-check'].checked){
         for(var i = 0; i < customSeps.length; i++){
-            if(customSeps[i] == '^' || customSeps[i] == '\\'){
+            if(customSeps[i] == '^' || customSeps[i] == '\\' || customSeps[i] == '-'){
                 sep += "\\" + customSeps[i];
             }else{
                 sep += customSeps[i];
