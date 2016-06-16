@@ -55,7 +55,7 @@ and open the template in the editor.
                                     <label for="switch-negative" class="unbolded">Allow negative values:</label>
                                     <input onchange='swapNegZero()' type="checkbox" class="form-text required" id='switch-negative' value="yes_negative" name="negative">
                                     <div id="neg-zero-wrapper" class="hide">
-                                        <label for="neg-zero">Allow negative zero: </label>
+                                        <label for="neg-zero" class="unbolded">Allow negative zero: </label>
                                         <input onchange='' type="checkbox" class="form-text required" id='neg-zero' value="neg-zero" name="neg-zero">
                                     </div>
                                 </div>
@@ -126,8 +126,8 @@ and open the template in the editor.
                                     <input onchange='' type="checkbox" class="form-text required" id='switch-group-labels' value="yes-enforce" name="group-labels">
                                 </div>
 				<div>
-				     Note: The generated regular expression will restrict the month to be from 1-12 and the day to be from 1-31. Further checking is needed for invalid dates such as February 30.
-	                       </div>
+                    <i>Note: The generated regular expression will restrict the month to be from 1-12 and the day to be from 1-31. Further checking is needed for invalid dates such as February 30.
+                </i></div>
                             </div>
                             <div id="phone-number" class="hide">
                                 <div id="edit-phone-format-wrapper" class="form-item">
