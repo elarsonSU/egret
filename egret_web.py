@@ -25,8 +25,6 @@ import sqlite3
 from flask import Flask, request, url_for, render_template, flash, Response, redirect
 from contextlib import closing
 import egret_api
-from werkzeug.utils import secure_filename
-
 
 # global variables (for sessions)
 session = [] # Holds all of the strings currently being tested against the regex
@@ -151,15 +149,11 @@ def download_file():
                     headers={'Content-Disposition':
                             'attachment;filename=session.txt'})
 
-# @app.route('/upload', methods=['GET', 'POST'])
-# def upload_file():
-#     return render_template('upload.html')
-    
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
         file = request.files['file']
-        # If not file selected
+        # If no file selected
         if request.files['file'].filename == '':
             return('No file selected')
         # If file isn't allowed
@@ -173,13 +167,11 @@ def upload_file():
             for item in content:
                 string = item.decode("utf-8") 
                 stringcontent.append(string.rstrip())
+            # Transfer content into session
             for item in stringcontent:
                 if item not in session:
                     session.append(item)
             return render_template('egret.html', data=data, session=session)
-        # Else,
-        else:
-            return ('Wrong filetype. Please upload a \'.txt\' file')
     return render_template('upload.html')
 
    
