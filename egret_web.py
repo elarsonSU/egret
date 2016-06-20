@@ -34,6 +34,8 @@ data['baseSubstr'] = ''
 data['testString'] = ''
 data['showGroups'] = False
 data['useDiffBase'] = False
+UPLOAD_FOLDER = '/tmp' # Uploads module requires this to be set, but nothing is actually saved there
+ALLOWED_EXTENSIONS = set(['txt'])
 
 # configuration
 DEBUG = True
@@ -41,6 +43,15 @@ DEBUG = True
 # create our application
 app = Flask(__name__)
 app.config.from_object(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+# Helper Functions
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+# Routes
 
 @app.route('/', methods=['GET', 'POST'])
 def process_submit():
@@ -140,6 +151,27 @@ def download_file():
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
+    if request.method == 'POST':
+        file = request.files['file']
+        # If no file selected
+        if request.files['file'].filename == '':
+            return('No file selected')
+        # If file isn't allowed
+        if not allowed_file(file.filename):
+            return ('Wrong filetype. Please upload a \'.txt\' file')
+        # If correctly uploaded and allowed filetype
+        if file and allowed_file(file.filename):
+            content = file.readlines()
+            stringcontent = []
+            # Need to decode byte lists into strings
+            for item in content:
+                string = item.decode("utf-8") 
+                stringcontent.append(string.rstrip())
+            # Transfer content into session
+            for item in stringcontent:
+                if item not in session:
+                    session.append(item)
+            return render_template('egret.html', data=data, session=session)
     return render_template('upload.html')
 
    
