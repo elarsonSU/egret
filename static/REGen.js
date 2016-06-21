@@ -117,66 +117,229 @@ function createRegularExpressionDate(){
 }
 
 function createRegularExpressionInt(){
-    var maxDigits = document.forms["create-re"]["Max_dig"].value;
-    var expression = "";
-    var leadingZeroes = "";
-    var unformattedMaxDigits = "[0-9]*";
-    var formattedMaxDigitsOverflow = "[0-9]{0,2}";
-    var formattedMaxDigitsGroups = "(,[0-9]{3})*";
+    var maxDigitsStr = document.forms["create-re"]["Max_dig"].value;
+    var maxDigits;
+    var isLimit;
+    var leadingZeroes;
+
     var commaSeparatorList = document.forms["create-re"]["comma-separator"];
-    
-    if((maxDigits != '' && isNaN(maxDigits))){
-        document.getElementById("re").innerHTML = "Maximum Digits must be numerical.";//error
-        return false;
+    var normAllowed;
+    var commaAllowed;
+
+    var zeroExpr = "";
+    var negExpr = "";
+
+    var normExpr = "";
+
+    var numThreeGroups;
+    var remainder;
+    var commaRemExpr = "";
+    var commaExpr = "";
+    var commaGroup = "(,[0-9]{3})";
+
+    var expression = "";
+
+    // Checking for limit
+    if(maxDigitsStr != '') {
+      maxDigits = parseInt(maxDigitsStr);
+      if (maxDigits < 1) {
+        return "Number of digits must be at least 1";
+      }
+      isLimit = true;
     }
-    
-    
-    
-    if(document.forms["create-re"]["negative"].checked){
-        if(document.forms['create-re']['neg-zero'].checked){
-            expression += "((-?)0|(-?)";
-        }else{
-           expression += "(0|(-?)";
-        }
-    }else{
-        expression += "(0|";
+    else {
+      isLimit = false;
     }
+
+    // Determine if norm (no commas) and/or commas are allowed.  If maxDigits is 3 or less, commas
+    // don't make sense.
+    if (isLimit && maxDigits <= 3) {
+      normAllowed = true;
+      commaAllowed = false;
+    }
+    else if (commaSeparatorList[0].checked) {
+      normAllowed = true;
+      commaAllowed = false;
+    }
+    else if (commaSeparatorList[1].checked) {
+      normAllowed = true;
+      commaAllowed = true;
+    }
+    else if (commaSeparatorList[2].checked) {
+      normAllowed = false;
+      commaAllowed = true;
+    }
+
+    // if(document.forms["create-re"]["negative"].checked){
+    //     if(document.forms['create-re']['neg-zero'].checked){
+    //         zeroExpres = "(-?0)"expression += "((-?)0|(-?)";
+    //     }else{
+    //         expression += "(0|(-?)";
+    //     }
+    // }else{
+    //     expression += "(0|";
+    // }
     
+    // Create zero string and special negative lookahead assertion for leading zeros without negative zero string
     if(document.forms["create-re"]["leadingZeroes"].checked){
-        leadingZeroes = "0";
-    }else{
-        leadingZeroes = '1';
+      leadingZeroes = true;
+    } else {
+      leadingZeroes = false;
+      if(document.forms["create-re"]["negative"].checked && document.forms['create-re']['neg-zero'].checked) {
+        zeroExpr = "-?0";
+      }
+      else {
+        zeroExpr = "0";
+      }
     }
     
-    if(maxDigits != '' && !isNaN(maxDigits)){
-        maxDigits = parseInt(maxDigits) - 1;
-        if(maxDigits !== 0){
-            unformattedMaxDigits = "[0-9]{0," + maxDigits + "}"; //with limit
-        }else{
-            unformattedMaxDigits = "";
-        }
-        if(maxDigits % 3 > 0){
-            formattedMaxDigitsOverflow = "[0-9]{0," + (maxDigits % 3) + "}";
-        }else{
-            formattedMaxDigitsOverflow = "";
-        }
-        if(parseInt(maxDigits / 3) > 0)
-            formattedMaxDigitsGroups = "(,[0-9]{3}){0," + parseInt(maxDigits / 3) + "}";
-        else
-            formattedMaxDigitsGroups = "";
-    } // if nothing, no limit
-    
-    if(commaSeparatorList[2].checked){  // REQUIRED
-        expression += "[" + leadingZeroes + "-9]" + formattedMaxDigitsOverflow;
-        expression += "" + formattedMaxDigitsGroups + ")";
-    }else if(commaSeparatorList[0].checked){  // NOT ALLOWED
-        expression += "[" + leadingZeroes + "-9]" + unformattedMaxDigits + ")";
-    }else{  // ALLOWED BUT NOT REQUIRED
-        expression += "(([" + leadingZeroes + "-9]" + unformattedMaxDigits + ")|";
-        expression += "([" + leadingZeroes + "-9]" + formattedMaxDigitsOverflow;
-        expression += "" + formattedMaxDigitsGroups + ")))";
+    // Create negative expression
+    if(document.forms["create-re"]["negative"].checked){
+      if (leadingZeroes && !document.forms['create-re']['neg-zero'].checked) {
+	negExpr = "(-(?=[0,]*[1-9]))?";
+      }
+      else {
+        negExpr = "-?";
+      }
+    }
+
+    // Generate normal expression
+    if(normAllowed) {
+      if(leadingZeroes) {
+	if(isLimit) {
+	  normExpr = "[0-9]{1," + maxDigits + "}";
+	}
+	else {
+	  normExpr = "[0-9]+";
+	}
+      }
+      else {
+	if(isLimit) {
+	  if (maxDigits != 1) {
+	    normExpr = "[1-9][0-9]{0," + (maxDigits - 1) + "}";
+	  }
+	  else {
+	    normExpr = "[1-9]";
+	  }
+	}
+	else {
+	  normExpr = "[1-9][0-9]*";
+	}
+      }
     }
     
+    // Create comma expressions
+    if (commaAllowed) {
+
+      if (isLimit) {
+        numThreeGroups = Math.floor(maxDigits / 3);
+        remainder = maxDigits % 3;
+
+	// Create remainder expression if remainder is 1 or 2
+        if (remainder == 1) {
+	  if (leadingZeroes) {
+	    commaRemExpr = "[0-9]" + commaGroup + "{" + numThreeGroups + "}";
+	  }
+	  else {
+	    commaRemExpr = "[1-9]" + commaGroup + "{" + numThreeGroups + "}";
+	  }
+	}
+	else if (remainder == 2) {
+	  if (leadingZeroes) {
+	    commaRemExpr = "[0-9]{1,2}" + commaGroup + "{" + numThreeGroups + "}";
+	  }
+	  else {
+	    commaRemExpr = "[1-9][0-9]?" + commaGroup + "{" + numThreeGroups + "}";
+	  }
+	}
+
+	// Create comma expression
+	if (leadingZeroes) {
+	  if (numThreeGroups == 1) { 
+	    commaExpr = "[0-9]{1,3}";
+	  }
+	  else {
+	    commaExpr = "[0-9]{1,3}" + commaGroup + "{0," + (numThreeGroups - 1) + "}";
+	  }
+	}
+	else {
+	  if (numThreeGroups == 1) { 
+	    commaExpr = "[1-9][0-9]{0,2}";
+	  }
+	  else {
+	    commaExpr = "[1-9][0-9]{0,2}" + commaGroup + "{0," + (numThreeGroups - 1) + "}";
+	  }
+	}
+      }
+      else { // no limit
+	if (leadingZeroes) {
+	  commaExpr = "[0-9]{1,3}" + commaGroup + "*";
+	}
+	else {
+	  commaExpr = "[1-9][0-9]{0,2}" + commaGroup + "*";
+	}
+      }
+    }
+
+    // Add negative indicators
+    if (negExpr != "") {
+      if (normExpr != "") {
+        normExpr = negExpr + normExpr;
+      }
+      if (commaExpr != "") {
+        commaExpr = negExpr + commaExpr;
+      }
+      if (commaRemExpr != "") {
+        commaRemExpr = negExpr + commaRemExpr;
+      }
+    }
+
+    //if(maxDigits != '' && !isNaN(maxDigits)){
+    //    maxDigits = parseInt(maxDigits) - 1;
+    //    if(maxDigits !== 0){
+    //        unformattedMaxDigits = "[0-9]{0," + maxDigits + "}"; //with limit
+    //    }else{
+    //        unformattedMaxDigits = "";
+    //    }
+    //    if(maxDigits % 3 > 0){
+    //        formattedMaxDigitsOverflow = "[0-9]{0," + (maxDigits % 3) + "}";
+    //    }else{
+    //        formattedMaxDigitsOverflow = "";
+    //    }
+    //    if(parseInt(maxDigits / 3) > 0)
+    //        formattedMaxDigitsGroups = "(,[0-9]{3}){0," + parseInt(maxDigits / 3) + "}";
+    //    else
+    //        formattedMaxDigitsGroups = "";
+    //} // if nothing, no limit
+    
+    //if(commaSeparatorList[2].checked){  // REQUIRED
+    //    expression += "[" + leadingZeroes + "-9]" + formattedMaxDigitsOverflow;
+    //    expression += "" + formattedMaxDigitsGroups + ")";
+    //}else if(commaSeparatorList[0].checked){  // NOT ALLOWED
+    //    expression += "[" + leadingZeroes + "-9]" + unformattedMaxDigits + ")";
+    //}else{  // ALLOWED BUT NOT REQUIRED
+    //    expression += "(([" + leadingZeroes + "-9]" + unformattedMaxDigits + ")|";
+    //    expression += "([" + leadingZeroes + "-9]" + formattedMaxDigitsOverflow;
+    //    expression += "" + formattedMaxDigitsGroups + ")))";
+   // }
+    
+    // Construct expression
+    if (normAllowed && commaAllowed) {
+      expression = normExpr + "|" + commaExpr;
+    }
+    else if (normAllowed) {
+      expression = normExpr;
+    }
+    else {
+      expression = commaExpr;
+    }
+    if (zeroExpr != "") {
+      expression = zeroExpr + "|" + expression;
+    }
+    if (commaRemExpr != "") {
+      expression = expression + "|" + commaRemExpr;
+    }
+
     return expression;
     
 }
