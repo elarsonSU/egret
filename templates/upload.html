@@ -3,37 +3,42 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EGRET</title>
-  <!--
-  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap.min.css') }}">
-  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap-theme.css') }}">
-  -->
+  <title>EGRET: Evil Generation of Regular Expression Tests - Upload</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
 
 </head>
 <body>
-<div class="container" style="margin-top:10px">
-  <div class="panel panel-primary">
-    <div class="panel-heading">
-      <h1>EGRET</h1>
-    </div>
-    <div class="panel-body">
-      Evil Generation of Regular Expression Tests
-    </div>
-  </div>
+
+<ul class="nav nav-tabs" role="tablist">
+  <li role="presentation" class="active"><a href="/">EGRET: Evil Generation of Regular Expression Tests</a></li>
+  <li role="presentation"><a href="/regex_gen">GGRE: Good Generation of Regular Expressions</a></li>
+</ul>
+
+<div class="container">
+
+  <h2> EGRET: Evil Generation of Regular Expression Tests </h2>
+
+  {% if uploadError %}
+  <p class="alert alert-danger"><strong>{{ uploadError }}</strong>
+  {% endif %}
 
   <div class="panel panel-info">
-      <div class="panel-heading">
-          <h2 class="panel-title">Upload your session here (.txt)</h3>
-      </div>
-      <div class="panel-body">
-        <form action="" method=post enctype=multipart/form-data>
-          <p><input type=file name=file>
-          <br>
-          <input class="btn btn-primary" type=submit value=Upload>
-        </form>
-      </div>
+
+    <div class="panel-heading">
+      <h2 class="panel-title">Upload session file</h2>
+    </div>
+
+    <div class="panel-body">
+      <form action="" method=post enctype=multipart/form-data>
+        Uploaded session file must be a .txt file. Each line in the .txt file will be added as a saved test string.
+	<br><br>
+        <p><input type=file name=file>
+        <br>
+        <input class="btn btn-primary" type=submit value=Upload>
+      </form>
+    </div>
+
   </div>
 
   <div class="panel panel-danger">
@@ -43,7 +48,7 @@
     </div>
 
     <div class="panel-body">
-      <p>Copyright (C) 2016 Eric Larson and Anna Kirk</p>
+      <p>Copyright (C) 2016 Eric Larson, Anna Kirk, and Nicolas Oman</p>
       <p>Program maintained by Eric Larson (elarson@seattleu.edu) at Seattle University</p>
       <p><a href="http://fac-staff.seattleu.edu/elarson/web/egret.htm">
         Additional information about EGRET
@@ -52,6 +57,5 @@
 
   </div>
 
-</div>
 </div>
 </body>

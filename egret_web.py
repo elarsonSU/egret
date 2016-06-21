@@ -45,21 +45,14 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-
 # Helper Functions
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
-# Routes
-
-@app.route('/', methods=['GET', 'POST'])
-def process_submit():
+def run_egret():
     global session
 
-    print(request.method)
-    print(request.form)
-    
     # get data from text boxes
     if 'regex' in request.form:
         data['regex'] = request.form.get('regex')
@@ -96,13 +89,6 @@ def process_submit():
       if item not in session:
         session.append(item)
 
-    # uploads strings to session
-    #upload = request.form.get('upload') 
-    #if upload:
-    #    uploadedStrings = upload.splitlines()
-    #    for item in uploadedStrings:
-    #        session.append(item)
-
     # run egret engine
     if data['useDiffBase']:
       baseSubstr = data['baseSubstr']
@@ -130,6 +116,14 @@ def process_submit():
         data['testResult'] = egret_api.run_test_string(data['regex'], data['testString'])
     else:
         data['testResult'] = ''
+
+# Routes
+
+@app.route('/', methods=['GET', 'POST'])
+def process_submit():
+
+    # run egret
+    run_egret()
     
     # render webpage
     return render_template('egret.html', data=data, session=session)
@@ -155,10 +149,12 @@ def upload_file():
         file = request.files['file']
         # If no file selected
         if request.files['file'].filename == '':
-            return('No file selected')
+            return render_template('upload.html',
+                    uploadError='No file selected')
         # If file isn't allowed
         if not allowed_file(file.filename):
-            return ('Wrong filetype. Please upload a \'.txt\' file')
+            return render_template('upload.html',
+                    uploadError='Wrong filetype. Please upload a \'.txt\' file')
         # If correctly uploaded and allowed filetype
         if file and allowed_file(file.filename):
             content = file.readlines()
@@ -171,6 +167,8 @@ def upload_file():
             for item in stringcontent:
                 if item not in session:
                     session.append(item)
+            # Rerun EGRET
+            run_egret()
             return render_template('egret.html', data=data, session=session)
     return render_template('upload.html')
 
