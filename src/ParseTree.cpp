@@ -276,7 +276,6 @@ ParseTree::character()
     return new ParseNode(DOLLAR_NODE, NULL, NULL);
   }
   else if (scanner.get_type() == HYPHEN) {
-    addWarning("received HYPHEN outside char range - could be a bad range");
     scanner.advance();
     character_node =  new ParseNode(CHARACTER_NODE, '-');
   }
@@ -416,7 +415,6 @@ ParseTree::character_item()
     char_set_item.character = '$';
   }
   else if (scanner.get_type() == HYPHEN) {
-    addWarning("received HYPHEN outside char range - could be a bad range");
     scanner.advance();
     char_set_item.character = '-';
   }

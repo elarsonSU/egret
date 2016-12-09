@@ -80,7 +80,7 @@ TestGenerator::gen_initial_strings()
     if (!warn_caret_start) {
       if (all_start_with_caret && !start_with_caret) {
         stringstream s;
-        s << "Some but not all strings start with a ^ anchor\n";
+        s << "ANCHOR WARNING: Some but not all strings start with a ^ anchor\n";
         s << "...String with ^ anchor:    " << first_string << "\n";
         s << "...String with no ^ anchor: " << path_string;
         addWarning(s.str());
@@ -88,7 +88,7 @@ TestGenerator::gen_initial_strings()
       }
       if (!all_start_with_caret && start_with_caret) {
         stringstream s;
-        s << "Some but not all strings start with a ^ anchor\n";
+        s << "ANCHOR WARNING: Some but not all strings start with a ^ anchor\n";
         s << "...String with ^ anchor:    " << path_string << "\n";
         s << "...String with no ^ anchor: " << first_string;
         addWarning(s.str());
@@ -98,7 +98,7 @@ TestGenerator::gen_initial_strings()
     if (!warn_dollar_end) {
       if (all_end_with_dollar && !end_with_dollar) {
         stringstream s;
-        s << "Some but not all strings end with a $ anchor\n";
+        s << "ANCHOR WARNING: Some but not all strings end with a $ anchor\n";
         s << "...String with $ anchor:    " << first_string << "\n";
         s << "...String with no $ anchor: " << path_string;
         addWarning(s.str());
@@ -106,7 +106,7 @@ TestGenerator::gen_initial_strings()
       }
       if (!all_end_with_dollar && end_with_dollar) {
         stringstream s;
-        s << "Some but not all strings end with a $ anchor\n";
+        s << "ANCHOR WARNING: Some but not all strings end with a $ anchor\n";
         s << "...String with $ anchor:    " << path_string << "\n";
         s << "...String with no $ anchor: " << first_string;
         addWarning(s.str());

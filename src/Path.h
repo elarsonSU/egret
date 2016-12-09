@@ -47,6 +47,9 @@ public:
   // generates the initial test string for the path
   string gen_initial_string(string base_substring);
 
+  // generates a string with minimum iterations for repeating constructs
+  string gen_min_iter_string();
+
   // returns true if path has a leading caret
   bool has_leading_caret();
 

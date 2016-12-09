@@ -39,6 +39,17 @@ RegexLoop::get_substring()
 }
 
 void
+RegexLoop::process_min_iter_string(string &min_iter_string)
+{
+  if (repeat_lower != 0) {
+    min_iter_string += get_substring();
+  }
+  else {
+    min_iter_string = min_iter_string.substr(0, min_iter_string.length() - path_substring.length());
+  }
+}
+
+void
 RegexLoop::process_begin_loop(string prefix, bool processed)
 {
   curr_prefix = prefix;

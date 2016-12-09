@@ -41,6 +41,9 @@ public:
   void set_substring(string s) { substring = s; }
   string get_substring() { return substring; }
 
+  // process minimum iterations string
+  void process_min_iter_string(string &min_iter_string);
+
   // generate evil strings
   set <string> gen_evil_strings(string path_string, const set <char> &punct_marks);
 

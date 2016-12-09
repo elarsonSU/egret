@@ -217,6 +217,7 @@ set <char>
 CharSet::create_test_chars(const set<char> &punct_marks)
 {
   set <char> test_chars;
+  set <char> duplicates;
   bool lowercase_flag = false;
   bool uppercase_flag = false;
   bool digit_flag = false;
@@ -239,7 +240,16 @@ CharSet::create_test_chars(const set<char> &punct_marks)
   for (it = items.begin(); it != items.end(); it++) {
     if (it->type == CHARACTER_ITEM) {
       char c = it->character;
-      test_chars.insert(c);
+
+      // Check for duplicates
+      if (test_chars.find(c) != test_chars.end()) {
+	duplicates.insert(c);
+      }
+      else {
+        test_chars.insert(c);
+      }
+
+      // Set flags properly
       if (islower(c)) {
 	lowercase_flag = true;
 	lowercase[c - 'a'] = true;
@@ -271,9 +281,7 @@ CharSet::create_test_chars(const set<char> &punct_marks)
 	    found_letter = true;
 	  }
 	  if (lowercase[c - 'a'] == true) {
-	    stringstream s;
-	    s << "Duplicate in character set: " << c;
-	    addWarning(s.str());
+	    duplicates.insert(c);
 	  }
 	  lowercase[c - 'a'] = true;
 	}
@@ -289,9 +297,7 @@ CharSet::create_test_chars(const set<char> &punct_marks)
 	    found_letter = true;
 	  }
 	  if (uppercase[c - 'A'] == true) {
-	    stringstream s;
-	    s << "Duplicate in character set: " << c;
-	    addWarning(s.str());
+	    duplicates.insert(c);
 	  }
 	  uppercase[c - 'A'] = true;
 	}
@@ -307,9 +313,7 @@ CharSet::create_test_chars(const set<char> &punct_marks)
 	    found_letter = true;
 	  }
 	  if (digits[c - '0'] == true) {
-	    stringstream s;
-	    s << "Duplicate in character set: " << c;
-	    addWarning(s.str());
+	    duplicates.insert(c);
 	  }
 	  digits[c - '0'] = true;
 	}
@@ -427,6 +431,17 @@ CharSet::create_test_chars(const set<char> &punct_marks)
     if (punct_marks.empty()) {
       test_chars.insert('_');
     }
+  }
+
+  // Print warning for duplicates if necessary
+  if (!duplicates.empty()) {
+    stringstream s;
+    s << "DUPLICATE WARNING: Duplicate characters in character set:";
+    set <char>::iterator si;
+    for (si = duplicates.begin(); si != duplicates.end(); si++) {
+      s << " " << *si;
+    }
+    addWarning(s.str());
   }
 
   return test_chars;

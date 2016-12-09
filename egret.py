@@ -27,7 +27,7 @@ from optparse import OptionParser
 
 # Precondition: regexStr successfully compiles and all strings in testStrings
 # match the regular expression
-def get_group_info(regexStr, testStrings):
+def get_group_info(regexStr, testStrings, namedOnly):
    # check for empty list
    if len(testStrings) == 0:
        return {}
@@ -39,7 +39,17 @@ def get_group_info(regexStr, testStrings):
    match = regex.fullmatch(testStrings[0])
    if len(match.groupdict()) != 0:
        useNames = True
+       names = list(match.groupdict().keys())
+       nameList = []
+       for name in names:
+           r = r"\?P<" + name
+           start = re.search(r, regexStr).start()
+           nameList.append((start, name))
+       nameList = sorted(nameList)
+       groupHdr = [ name for (start, name) in nameList ]
    elif len(match.groups()) != 0:
+       if namedOnly:
+           return None
        useNames = False
    else:
        return None
@@ -49,7 +59,11 @@ def get_group_info(regexStr, testStrings):
    for testStr in testStrings:
        match = regex.fullmatch(testStr)
        if useNames:
-           groupDict[testStr] = match.groupdict()
+           g = match.groupdict()
+           groupList = []
+           for i in groupHdr:
+               groupList.append({i: g[i]})
+           groupDict[testStr] = groupList
        else:
            groupDict[testStr] = match.groups()
 
@@ -67,6 +81,8 @@ parser.add_option("-s", "--stat", action = "store_true", dest = "statMode",
     default = False, help = "display stats")
 parser.add_option("-g", "--groups", action = "store_true", dest = "showGroups",
     default = False, help = "show groups")
+parser.add_option("-n", "--named_groups", action = "store_true", dest = "showNamedGroups",
+    default = False, help = "only show named groups")
 opts, args = parser.parse_args()
 
 # check for valid command lines
@@ -112,15 +128,16 @@ if not hasError:
   #elapsed_time = time.process_time() - start_time
 
   # display groups if requested
-  if opts.showGroups:
-      groupDict = get_group_info(regexStr, matches)
+  if opts.showGroups or opts.showNamedGroups:
+      groupDict = get_group_info(regexStr, matches, opts.showNamedGroups)
       if groupDict == None:
           showGroups = False
-          if hasWarning:
-              status = status + "Regex does not have any capturing groups\n"
-          else:
-              hasWarning = True
-              status = "Regex does not have any capturing groups\n"
+          if opts.showGroups:
+              if hasWarning:
+                  status = status + "Regex does not have any capturing groups\n"
+              else:
+                  hasWarning = True
+                  status = "Regex does not have any capturing groups\n"
       else:
           showGroups = True
           maxLength = 7 # smallest size of format

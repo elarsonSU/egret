@@ -38,6 +38,9 @@ public:
   // get substring - additional iterations for lower bounds greater than 1
   string get_substring();
 
+  // process minimum iterations string
+  void process_min_iter_string(string &min_iter_string);
+
   // process begin loop edge
   void process_begin_loop(string prefix, bool processed);
 

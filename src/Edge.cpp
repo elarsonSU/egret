@@ -43,6 +43,25 @@ Edge::get_substring()
   }
 }
 
+void
+Edge::process_min_iter_string(string &min_iter_string)
+{
+  switch (type) {
+  case CHARACTER_EDGE:
+  case CHAR_SET_EDGE:
+    min_iter_string += get_substring();
+    break;
+  case STRING_EDGE:
+    regex_str->process_min_iter_string(min_iter_string);
+    break;
+  case END_LOOP_EDGE:
+    regex_loop->process_min_iter_string(min_iter_string);
+    break;
+  default:
+    ;
+  }
+}
+
 bool
 Edge::process_edge_in_path(string path_prefix, string base_substring)
 {

@@ -64,6 +64,16 @@ Path::gen_initial_string(string base_substring)
   return path_string;
 }
 
+string
+Path::gen_min_iter_string()
+{
+  string min_iter_string = "";
+  for (unsigned int i = 0; i < edges.size(); i++) {
+    edges[i]->process_min_iter_string(min_iter_string);
+  }
+  return min_iter_string;
+}
+
 bool
 Path::has_leading_caret()
 {
@@ -163,6 +173,10 @@ Path::gen_evil_strings(const set <char> &punct_marks)
 {
   set <string> evil_strings;
 
+  // add string where each repeat quantifier is zero (if allowed)
+  evil_strings.insert(gen_min_iter_string());
+
+  // add strings for interesting edges (char sets, strings, and loops)
   vector <unsigned int>::iterator it;
   for (unsigned int i = 0; i < evil_edges.size(); i++) {
     int index = evil_edges[i];

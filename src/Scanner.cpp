@@ -73,13 +73,13 @@ Scanner::init(string in)
 	  }
 	  else {
 	    token.type = WORD_BOUNDARY;
-	    addWarning("Regex contains ignored \\b");
+	    addWarning("IGNORED WARNING: Regex contains ignored \\b");
 	  }
 	  break;
 	// \B is also treated as word boundary
 	case 'B':
 	  token.type = WORD_BOUNDARY;
-	  addWarning("Regex contains ignored \\B");
+	  addWarning("IGNORED WARNING: Regex contains ignored \\B");
 	  break;
 	// Escaped characters are unsupported
         case 'a':
@@ -494,7 +494,7 @@ Scanner::process_extension(string in, unsigned int &idx)
   case '!':
   {
     stringstream s;
-    s << "Regex contains ignored extension ?" << ext;
+    s << "IGNORED WARNING: Regex contains ignored extension ?" << ext;
     addWarning(s.str());
     token.type = IGNORED_EXT;
     break;
@@ -505,7 +505,7 @@ Scanner::process_extension(string in, unsigned int &idx)
     char c = get_next_char(in, idx);
     if (c == '=' || c == '!') {
       stringstream s;
-      s << "Regex contains ignored extension ?<" << c;
+      s << "IGNORED WARNING: Regex contains ignored extension ?<" << c;
       addWarning(s.str());
       token.type = IGNORED_EXT;
     }

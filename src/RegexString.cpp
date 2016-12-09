@@ -25,6 +25,17 @@
 #include "RegexString.h"
 using namespace std;
 
+void
+RegexString::process_min_iter_string(string &min_iter_string)
+{
+  if (repeat_lower != 0) {
+    min_iter_string += get_substring();
+  }
+  else {
+    min_iter_string = min_iter_string.substr(0, min_iter_string.length() - substring.length());
+  }
+}
+
 set <string>
 RegexString::gen_evil_strings(string path_string, const set <char> &punct_marks)
 {

@@ -56,6 +56,9 @@ public:
   // get valid substring associated with edge
   string get_substring();
 
+  // process minimum iteration string
+  void process_min_iter_string(string &min_iter_string);
+
   // perform path processing on the edge, returns true if edge should be used in
   // creating evil strings
   bool process_edge_in_path(string path_prefix, string base_substring);
