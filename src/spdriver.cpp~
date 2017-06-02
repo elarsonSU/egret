@@ -1,0 +1,35 @@
+#include <iostream>
+#include "StringPath.h"
+using namespace std;
+
+
+StringPath get()
+{
+  StringPath p;
+  p.add_string(" get | ");
+  return p;
+}
+
+void test(StringPath* x)
+{
+  StringPath y = get();
+  if(y.path.size() > 0) x->add_path(y);
+  x->add_string("hello | ");
+  //return x;
+}
+
+int main()
+{
+  cout << "in sp driver app" << endl;
+  
+  StringPath s;
+  s.add_string("begin | ");
+  test(&s);
+  test(&s);
+  test(&s);
+  
+  cout << s.get_string() << endl;
+  
+  cout << "leaving sp driver app" << endl;
+  return 0;
+}

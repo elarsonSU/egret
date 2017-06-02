@@ -51,6 +51,7 @@ typedef enum
   NO_GROUP_EXT,		// (?:...)
   NAMED_GROUP_EXT,	// (?P<name>...)
   IGNORED_EXT,		// extensions that are ignored
+  BACKREFERENCE,    // backreferences
   ERR			// error 
 } TokenType;
 
@@ -60,6 +61,8 @@ struct Token
   int repeat_lower;	// for REPEAT
   int repeat_upper;	// for REPEAT (-1 for no limit)
   char character;	// for CHARACTER and CHAR_CLASS
+  int backref_value;  // for BACKREFERENCE
+  string name;  // FOR BACKREFERENCE
 };
 
 // A scanner class, encapsulates the input stream as a set of tokens
@@ -84,6 +87,12 @@ public:
 
   // returns character associated with current token
   char get_character();
+
+  // returns the backreference value (group number for referenced group)
+  int get_backref_value();
+
+  // gets the backreference name (for named backreference groups)
+  string get_name();
 
   // advance to the next token
   void advance();

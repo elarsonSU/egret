@@ -27,6 +27,7 @@
 #include "CharSet.h"
 #include "RegexString.h"
 #include "RegexLoop.h"
+#include "StringPath.h"
 using namespace std;
 
 typedef enum {
@@ -37,7 +38,10 @@ typedef enum {
   END_LOOP_EDGE,
   CARET_EDGE,
   DOLLAR_EDGE,
-  EPSILON_EDGE
+  EPSILON_EDGE,
+  BACKREFERENCE_EDGE,
+  BEGIN_GROUP_EDGE,
+  END_GROUP_EDGE
 } EdgeType;
 
 class Edge {
@@ -50,21 +54,27 @@ public:
   Edge(EdgeType t, CharSet *c) { type = t; char_set = c; processed = false; }
   Edge(EdgeType t, RegexString *r) { type = t; regex_str = r; processed = false; }
   Edge(EdgeType t, RegexLoop *r) { type = t; regex_loop = r; processed = false; }
+  Edge(EdgeType t, string _name, int _num, int _id) { type = t; name = _name; num = _num; id = _id;  processed = false; }
+  Edge(EdgeType t, string _name, int _num) { type = t; name = _name; num = _num;  processed = false; }
 
   EdgeType getType() { return type; }
 
   // get valid substring associated with edge
-  string get_substring();
+  StringPath get_substring();
 
   // process minimum iteration string
-  void process_min_iter_string(string &min_iter_string);
+  void process_min_iter_string(StringPath *min_iter_string);
 
   // perform path processing on the edge, returns true if edge should be used in
   // creating evil strings
-  bool process_edge_in_path(string path_prefix, string base_substring);
+  bool process_edge_in_path(StringPath path_prefix, StringPath base_substring);
 
   // generate evil strings
-  set <string> gen_evil_strings(string path_string, const set <char> &punct_marks);
+  set <StringPath, spcompare> gen_evil_strings(StringPath path_string, const set <char> &punct_marks);
+
+  string get_charset_as_string();
+
+  bool is_charset_complemented();
 
   // print the edge
   void print();
@@ -76,6 +86,9 @@ private:
   CharSet *char_set;		// character set (for CHAR_SET_EDGE)
   RegexString *regex_str;	// regex string (for STRING_EDGE)
   RegexLoop *regex_loop;	// regex loop (for BEGIN_LOOP_EDGE and END_LOOP_EDGE)
+  string name;  // name (for BACKREFERENCE_EDGE, BEGIN_GROUP_EDGE, and END_GROUP_EDGE)
+  int num;      // number (for BACKREFERENCE_EDGE, BEGIN_GROUP_EDGE, and END_GROUP_EDGE)
+  int id;       // unique id for BACKREFERENCE_EDGE
 };
 
 #endif // EDGE_H

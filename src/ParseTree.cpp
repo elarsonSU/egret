@@ -30,6 +30,7 @@
 #include <sstream>
 #include <string>
 #include <set>
+#include <unordered_map>
 #include "CharSet.h"
 #include "ParseTree.h"
 #include "Scanner.h"
@@ -46,12 +47,13 @@ ParseTree::build(Scanner &_scanner)
 {
   scanner = _scanner;
   root = expr();
-
+  
   if (scanner.get_type() != ERR) {
     stringstream s;
     s << "ERROR: Parse error - expected end of regex but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
+  count_groups();
 }
 
 // expr ::= concat '|' expr
@@ -213,6 +215,8 @@ ParseTree::group()
   ParseNode *group_node;
   ParseNode *left;
   bool ignored_group = false;
+  string name = "";
+  int group_num = 0;
 
   if (scanner.get_type() != LEFT_PAREN) {
     stringstream s;
@@ -220,33 +224,40 @@ ParseTree::group()
     throw EgretException(s.str());
   }
   scanner.advance();
- 
-  if (scanner.get_type() == NO_GROUP_EXT)
-    scanner.advance();
-  if (scanner.get_type() == NAMED_GROUP_EXT)
-    scanner.advance();
-  if (scanner.get_type() == IGNORED_EXT) {
-    scanner.advance();
-    ignored_group = true;
-  }
 
-  if (!ignored_group || scanner.get_type() != RIGHT_PAREN) {
-    left = expr();
-  }
+  if (false) {
+  } else {
+    if (scanner.get_type() == NO_GROUP_EXT) {
+      group_num = -1;
+      scanner.advance();
+    }
+    if (scanner.get_type() == NAMED_GROUP_EXT) {
+      name = scanner.get_name();
+      scanner.advance();
+    }
+    if (scanner.get_type() == IGNORED_EXT) {
+      scanner.advance();
+      ignored_group = true;
+    }
 
-  if (ignored_group) {
-    group_node = new ParseNode(IGNORED_NODE, NULL, NULL);
-  }
-  else {
-    group_node = new ParseNode(GROUP_NODE, left, NULL);
-  }
+    if (!ignored_group || scanner.get_type() != RIGHT_PAREN) {
+      left = expr();
+    }
 
-  if (scanner.get_type() != RIGHT_PAREN) {
-    stringstream s;
-    s << "ERROR: Parse error - expected ')' but received " << scanner.get_type_str();
-    throw EgretException(s.str());
+    if (ignored_group) {
+      group_node = new ParseNode(IGNORED_NODE, NULL, NULL);
+    }
+    else {
+      group_node = new ParseNode(GROUP_NODE, name, group_num, left, NULL);
+    }
+
+    if (scanner.get_type() != RIGHT_PAREN) {
+      stringstream s;
+      s << "ERROR: Parse error - expected ')' but received " << scanner.get_type_str();
+      throw EgretException(s.str());
+    }
+    scanner.advance();
   }
-  scanner.advance();
 
   return group_node;
 }
@@ -283,17 +294,25 @@ ParseTree::character()
     scanner.advance();
     return new ParseNode(IGNORED_NODE, NULL, NULL);
   }
+  else if (scanner.get_type() == BACKREFERENCE) {
+    character_node = new ParseNode(BACKREFERENCE_NODE, scanner.get_backref_value(), scanner.get_name());
+    scanner.advance();
+  }
   else {
     stringstream s;
     s << "ERROR: Parse error - expected character type but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
-  char c = character_node->character;
-  if (ispunct(c)) {
-    if (punct_marks.find(c) == punct_marks.end()) {
-      punct_marks.insert(c);
+
+  if(scanner.get_type() != BACKREFERENCE) {
+    char c = character_node->character;
+    if (ispunct(c)) {
+      if (punct_marks.find(c) == punct_marks.end()) {
+        punct_marks.insert(c);
+      }
     }
   }
+  
   return character_node;
 }
 
@@ -520,7 +539,10 @@ ParseTree::print_tree(ParseNode *node, unsigned offset)
       cout << "<repeat {" << node->repeat_lower << "," << node->repeat_upper << "}>";
     break;
   case GROUP_NODE:
-    cout << "<group ()>";
+    cout << "<group ()>" << node->group_num << " " << node->name;
+    break;
+  case BACKREFERENCE_NODE:
+    cout << "<backreference ()> id=" << node->backref_id << ", " << node->backref_value << " " << node->name;
     break;
   case IGNORED_NODE:
     cout << "<ignored>";
@@ -550,6 +572,41 @@ ParseTree::print_tree(ParseNode *node, unsigned offset)
 }
 
 void
+ParseTree::count_groups()
+{
+  backreference_count = 0;
+  count_g(root, 0, 1);
+}
+
+int ParseTree::count_g(ParseNode *node, unsigned offset, int count)
+{
+  if (!node) return count;
+
+  if (node->type == GROUP_NODE) {
+    if(node->group_num == 0) {
+      node->group_num = count;
+      if(node->name != "") {
+	group_names[node->name] = count;
+      }
+      count++;
+    }
+  }
+
+  if (node->type == BACKREFERENCE_NODE) {
+    backreference_count++;
+    node->backref_id = backreference_count;
+    if (node->name != "") {
+      node->backref_value = group_names[node->name];
+    }
+  }
+  
+  count = count_g(node->left, offset + 2, count);
+  count = count_g(node->right, offset +2, count);
+
+  return count;
+}
+
+void
 ParseTree::add_stats(Stats &stats)
 {
   ParseTreeStats tree_stats = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -558,6 +615,7 @@ ParseTree::add_stats(Stats &stats)
   stats.add("PARSE_TREE", "Concat nodes", tree_stats.concat_nodes);
   stats.add("PARSE_TREE", "Repeat nodes", tree_stats.repeat_nodes);
   stats.add("PARSE_TREE", "Group nodes", tree_stats.group_nodes);
+  stats.add("PARSE_TREE", "Backreference nodes", tree_stats.backreference_nodes);
   stats.add("PARSE_TREE", "Caret nodes", tree_stats.caret_nodes);
   stats.add("PARSE_TREE", "Dollar nodes", tree_stats.dollar_nodes);
   stats.add("PARSE_TREE", "Character nodes", tree_stats.character_nodes);
@@ -583,6 +641,9 @@ ParseTree::gather_stats(ParseNode *node, ParseTreeStats &tree_stats)
     break;
   case GROUP_NODE:
     tree_stats.group_nodes++;
+    break;
+  case BACKREFERENCE_NODE:
+    tree_stats.backreference_nodes++;
     break;
   case CHARACTER_NODE:
     tree_stats.character_nodes++;

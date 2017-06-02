@@ -1,0 +1,23 @@
+#ifndef STRING_PATH_H
+#define STRING_PATH_H
+
+#include <string>
+#include <vector>
+using namespace std;
+
+typedef enum {
+  CHAR,
+  BEGIN_GROUP,
+  END_GROUP,
+  BACKREFERENCE
+} ItemType;
+
+class StringPath {
+ public:
+  StringPath() {}
+
+ private:
+  
+};
+
+#endif // STRING_PATH_H

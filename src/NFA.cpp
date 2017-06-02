@@ -107,7 +107,7 @@ NFA::build_nfa_from_tree(ParseNode *tree)
 	tree->repeat_lower, tree->repeat_upper);
 
   case GROUP_NODE:
-    return build_nfa_group(build_nfa_from_tree(tree->left));
+    return build_nfa_group(build_nfa_from_tree(tree->left), tree->name, tree->group_num);
 
   case CHARACTER_NODE:
     return build_nfa_character(tree->character);
@@ -123,6 +123,9 @@ NFA::build_nfa_from_tree(ParseNode *tree)
 
   case IGNORED_NODE:
     return build_nfa_ignored();
+
+  case BACKREFERENCE_NODE:
+    return build_nfa_backreference(tree->name, tree->backref_value, tree->backref_id);
 
   default:
     throw EgretException("ERROR (internal): Invalid node type in parse tree");
@@ -227,8 +230,30 @@ NFA::build_nfa_string(ParseNode *node, int repeat_lower, int repeat_upper)
 }
 
 NFA
-NFA::build_nfa_group(NFA nfa)
+NFA::build_nfa_group(NFA nfa, string name, int num)
 {
+  
+  NFA nfa1(2, 0, 1);
+  Edge *begin_edge = new Edge(BEGIN_GROUP_EDGE, name, num);
+  nfa1.add_edge(0, 1, begin_edge);
+
+  NFA nfa2(2, 0, 1);
+  Edge *end_edge = new Edge(END_GROUP_EDGE, name, num);
+  nfa2.add_edge(0, 1, end_edge);
+
+  NFA ret(nfa.size+2, 0, nfa.size+1);
+  ret = build_nfa_concat(nfa1, nfa);
+  ret = build_nfa_concat(ret, nfa2);
+  
+  return ret;
+}
+
+NFA
+NFA::build_nfa_backreference(string name, int num, int id)
+{
+  NFA nfa(2, 0, 1);     // size = 2, initial = 0, final = 1
+  Edge *edge = new Edge(BACKREFERENCE_EDGE, name, num, id);
+  nfa.add_edge(0, 1, edge);
   return nfa;
 }
 
@@ -270,7 +295,7 @@ NFA::build_nfa_ignored()
 NFA
 NFA::build_nfa_char_set(CharSet *char_set)
 {
-  NFA nfa(2, 0, 1);
+  NFA nfa(2, 0, 1);     // size = 2, initial = 0, final = 1
   Edge *edge = new Edge(CHAR_SET_EDGE, char_set);
   nfa.add_edge(0, 1, edge);
   return nfa;
@@ -428,6 +453,9 @@ NFA::add_stats(Stats &stats)
   int caret_count = 0;
   int dollar_count = 0;
   int epsilon_count = 0;
+  int backreference_count = 0;
+  int begin_group_count = 0;
+  int end_group_count = 0;
 
   for (unsigned int from = 0; from < size; from++) {
     for (unsigned int to = 0; to < size; to++) {
@@ -459,6 +487,15 @@ NFA::add_stats(Stats &stats)
 	  case EPSILON_EDGE:
 	    epsilon_count++;
 	    break;
+	  case BACKREFERENCE_EDGE:
+	    backreference_count++;
+	    break;
+	  case BEGIN_GROUP_EDGE:
+	    begin_group_count++;
+	    break;
+	  case END_GROUP_EDGE:
+	    end_group_count++;
+	    break;
 	}
       }
     }
@@ -474,4 +511,7 @@ NFA::add_stats(Stats &stats)
   stats.add("NFA", "NFA caret edges", caret_count);
   stats.add("NFA", "NFA dollar edges", dollar_count);
   stats.add("NFA", "NFA epsilon edges", epsilon_count);
+  stats.add("NFA", "NFA backreference edges", backreference_count);
+  stats.add("NFA", "NFA begin group edges", begin_group_count);
+  stats.add("NFA", "NFA end group edges", end_group_count);
 }

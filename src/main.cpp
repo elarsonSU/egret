@@ -32,6 +32,7 @@ static char *get_arg(int &idx, int argc, char **argv);
 int
 main(int argc, char *argv[])
 {
+  cout << "RUNNING PROGRAM" << endl;
   int idx = 1;
   string regex = "";
   string base_substring = "evil";

@@ -77,7 +77,7 @@ private:
   NFA build_nfa_string(ParseNode *tree, int repeat_lower, int repeat_upper);
 
   // builds (nfa)
-  NFA build_nfa_group(NFA nfa);
+  NFA build_nfa_group(NFA nfa, string name, int num);
 
   // builds nfa with character
   NFA build_nfa_character(char character);
@@ -87,6 +87,9 @@ private:
 
   // builds nfa with dollar
   NFA build_nfa_dollar();
+
+  // builds nfa with backreference
+  NFA build_nfa_backreference(string name, int num, int id);
 
   // builds nfa with ignored element
   NFA build_nfa_ignored();
