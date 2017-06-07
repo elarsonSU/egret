@@ -26,6 +26,9 @@
 #include <vector>
 #include "CharSet.h"
 #include "error.h"
+#include "StringPath.h"
+#include <string>
+#include <algorithm>
 using namespace std;
 
 void
@@ -135,6 +138,153 @@ CharSet::get_valid_character()
   throw EgretException("ERROR (internal): Could not find good char in complemented char set");
 }
 
+void
+CharSet::check_invalid_punctuation()
+{
+  check_single_punctuation();
+  check_only_digits_and_punctuation();
+}
+
+void
+CharSet::check_only_digits_and_punctuation()
+{
+  bool found_other = false;
+  bool found_digit = false;
+  bool found_punctuation = false;
+
+  vector <CharSetItem>::iterator it;
+  for (it = items.begin(); it != items.end(); it++) {
+    if (it->type == CHAR_RANGE_ITEM) {
+      if (((it->range_start >= 48) && (it->range_start <= 57)) || ((it->range_end >= 48) && (it->range_end <= 57))) {
+	found_digit = true;
+      }
+      else {
+	found_other = true;
+      }
+    }
+    else if (it->type == CHAR_CLASS_ITEM) {
+      if (it->character == 'd') {
+	found_digit = true;
+      }
+      else {
+	found_other = true;
+      }
+    }
+    else if (it->type == CHARACTER_ITEM) {
+      char c = it->character;
+      if (((c >= 33) && (c <= 47)) ||
+          ((c >= 58) && (c <= 64)) ||
+          ((c >= 91) && (c <= 96)) ||
+          ((c >= 123) && (c <= 126))) {
+        found_punctuation = true;
+      }
+      else if ((c >= 48) && (c <= 57)) {
+	found_digit = true;
+      }
+      else {
+	found_other = true;
+      }
+    }
+  }
+
+  if (found_digit && found_punctuation && !found_other) {
+    stringstream s;
+    s << "WARNING: Character set contains only digits and punctuation marks";
+    addWarning(s.str());
+  }
+}
+
+void
+CharSet::check_single_punctuation()
+{
+  bool found_punctuation = false;
+  char punctuation_mark;
+  bool found_another_punctuation = false;
+  bool other_chars = false;
+  bool ignore = false;
+  
+  vector <CharSetItem>::iterator it;
+  for (it = items.begin(); it != items.end(); it++) {
+    if (!complement) {
+      if ((it->type == CHAR_CLASS_ITEM) && (it->character == 'w')) {
+        ignore = true;
+      }
+      if (it->type == CHARACTER_ITEM) {
+        char c = it->character;
+        if (((c >= 33) && (c <= 47)) ||
+	    ((c >= 58) && (c <= 64)) ||
+	    ((c >= 91) && (c <= 96)) ||
+	    ((c >= 123) && (c <= 126))) {
+	  if (!found_punctuation) {
+	    punctuation_mark = c;
+	    found_punctuation = true;
+	  }
+	  else if (c != punctuation_mark) { // if different
+	    found_another_punctuation = true;
+	    ignore = true;
+	  }
+        }
+	else {
+	  other_chars = true;
+	}
+      }
+    }
+  }
+
+  if (found_punctuation && !found_another_punctuation && !ignore && other_chars) {
+    stringstream s;
+    s << "WARNING: Only punctuation mark inside a character set is: " << string(1, punctuation_mark);
+    addWarning(s.str());
+  }
+}
+
+string
+CharSet::get_charset_as_string()
+{
+  vector <CharSetItem>::iterator it;
+  string ret = "";
+  vector<CharSetItem> sorted_items = items;
+
+  struct sortClass {
+    bool operator() (CharSetItem x, CharSetItem y) { return (x.character <= y.character); }
+  } sortObject;
+  
+  std::sort(sorted_items.begin(), sorted_items.end(), sortObject);
+
+  for (it = sorted_items.begin(); it != sorted_items.end(); it++) {
+    ret.push_back(it->character);
+  }
+  
+  return ret;
+}
+
+bool
+CharSet::only_has_characters()
+{
+  bool only_characters = true;
+  vector <CharSetItem>::iterator it;
+
+  for (it = items.begin(); it != items.end(); it++) {
+    if (it->type != CHARACTER_ITEM) {
+      only_characters = false;
+    }
+    else {
+      char c = it->character;
+      if ((c < 48) || ((c > 57) && (c < 65)) || ((c > 90) && (c < 97)) || (c > 122)) {
+	only_characters = false;
+      }
+    }
+  }
+  
+  return only_characters;
+}
+
+bool
+CharSet::is_charset_complemented()
+{
+  return complement;
+}
+
 bool
 CharSet::is_valid_character(char character)
 {
@@ -196,26 +346,32 @@ CharSet::is_valid_character(char character)
   return true;
 }
 
-set <string>
-CharSet::gen_evil_strings(string path_string, const set <char> &punct_marks)
+set <StringPath, spcompare>
+CharSet::gen_evil_strings(StringPath path_string, const set <char> &punct_marks)
 {
   set <char> test_chars  = create_test_chars(punct_marks);
-  string path_suffix = path_string.substr(path_prefix.length() + 1);
+  StringPath path_suffix;
+  int initial = path_prefix.path.size() + 1;
+  int final = path_string.path.size();
+  for(int i = initial; i < final; i++) path_suffix.add_path_item(path_string.path[i]); 
 
-  set <string> evil_strings;
+  set <StringPath, spcompare> evil_strings;
   set <char>::iterator cs;
   for (cs = test_chars.begin(); cs != test_chars.end(); cs++) {
-    string new_string;
-    new_string = path_prefix + *cs + path_suffix;
+    StringPath new_string;
+    new_string.add_path(path_prefix);
+    new_string.add_string(string(1,*cs));
+    new_string.add_path(path_suffix);
     evil_strings.insert(new_string);
   }
-
   return evil_strings;
 }
 
 set <char>
 CharSet::create_test_chars(const set<char> &punct_marks)
 {
+  check_invalid_punctuation();
+  
   set <char> test_chars;
   set <char> duplicates;
   bool lowercase_flag = false;

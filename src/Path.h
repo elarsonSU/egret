@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include "Edge.h"
+#include "StringPath.h"
 using namespace std;
 
 class Path {
@@ -45,10 +46,10 @@ public:
   void mark_path_visited(bool *visited);
 
   // generates the initial test string for the path
-  string gen_initial_string(string base_substring);
+  StringPath gen_initial_string(StringPath base_substring);
 
   // generates a string with minimum iterations for repeating constructs
-  string gen_min_iter_string();
+  StringPath gen_min_iter_string();
 
   // returns true if path has a leading caret
   bool has_leading_caret();
@@ -61,14 +62,19 @@ public:
   string check_anchor_middle();
 
   // generates evil strings for the path
-  set <string> gen_evil_strings(const set <char> &punct_marks);
+  set <StringPath, spcompare> gen_evil_strings(const set <char> &punct_marks);
+
+  bool check_for_duplicate_character_sets();
+
+  void print();
 
 private:
 
   vector <unsigned int> states;		// list of states
   vector <Edge *> edges;		// list of edges
   vector <unsigned int> evil_edges;	// list of evil edges that need processing
-  string path_string;			// test string associated with path
+  StringPath path_string;			// test string associated with path
+  
 };
 
 #endif // PATH_H

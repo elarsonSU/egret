@@ -30,15 +30,41 @@
 #include "TestGenerator.h"
 #include "Path.h"
 #include "error.h"
+#include <iostream>
+#include "StringPath.h"
 using namespace std;
 
 vector <string>
 TestGenerator::gen_test_strings()
 {
+  vector <string> ret_strings;
+  vector <StringPath>::iterator it;
   paths = nfa.find_basis_paths();
+
+  // gen initial strings
   gen_initial_strings();
+
+  // gen evil backreference strings
+  vector <int> backrefs_done;
+  for(it = test_strings.begin(); it != test_strings.end(); it++) {
+    vector <string> res = it -> gen_evil_backreference_strings(backrefs_done);
+    vector <string>::iterator i;
+    for(i = res.begin(); i != res.end(); i++) {
+      if(!(std::find(ret_strings.begin(), ret_strings.end(), *i) != ret_strings.end()))
+        ret_strings.insert(ret_strings.begin(), *i);
+    }
+  }
+  
+  // gen evil strings
   gen_evil_strings();
-  return test_strings;
+  // add evil strings to ret strings list
+  for(it = test_strings.begin(); it != test_strings.end(); it++) {
+    string s = it -> get_string();
+    if(!(std::find(ret_strings.begin(), ret_strings.end(), s) != ret_strings.end()))
+      ret_strings.insert(ret_strings.begin(), s);
+  }
+  return ret_strings;
+
 }
 
 void
@@ -49,29 +75,36 @@ TestGenerator::gen_initial_strings()
   bool warn_anchor_middle = false;
   bool warn_caret_start = false;
   bool warn_dollar_end = false;
-
+  bool warn_duplicate_character_set = false;
+  
   vector <Path>::iterator path_iter;
-  string first_string = "";
-  for (path_iter = paths.begin(); path_iter != paths.end(); path_iter++) {
-
+  StringPath first_string;
+  for (path_iter = paths.begin(); path_iter != paths.end(); path_iter++) {  // for each path
     // check for leading carets and trailing dollars
     bool start_with_caret = path_iter->has_leading_caret();
     bool end_with_dollar = path_iter->has_trailing_dollar();
 
     // go through each state in the path
-    string path_string = path_iter->gen_initial_string(base_substring);
+    StringPath path_string;
+    path_string.clear();
+    path_string.add_path(path_iter->gen_initial_string(base_substring));
     add_to_test_strings(path_string);
 
     // for first path, record whether the path starts with ^ and/or ends with $
-    if (first_string == "") {
+    if (first_string.path.empty()) {
       all_start_with_caret = start_with_caret;
       all_end_with_dollar = end_with_dollar;
       first_string = path_string;
     }
 
+    // check for duplicate character sets
+    if (path_iter->check_for_duplicate_character_sets()) {
+      warn_duplicate_character_set = true;
+    }
+
     // check for anchors in the middle
     string anchor_err = path_iter->check_anchor_middle();
-	  
+    
     // process anchor warnings
     if (!warn_anchor_middle && anchor_err != "") {
       addWarning(anchor_err);
@@ -81,16 +114,16 @@ TestGenerator::gen_initial_strings()
       if (all_start_with_caret && !start_with_caret) {
         stringstream s;
         s << "ANCHOR WARNING: Some but not all strings start with a ^ anchor\n";
-        s << "...String with ^ anchor:    " << first_string << "\n";
-        s << "...String with no ^ anchor: " << path_string;
+        s << "...String with ^ anchor:    " << first_string.get_string() << "\n";
+        s << "...String with no ^ anchor: " << path_string.get_string();
         addWarning(s.str());
         warn_caret_start = true;
       }
       if (!all_start_with_caret && start_with_caret) {
         stringstream s;
         s << "ANCHOR WARNING: Some but not all strings start with a ^ anchor\n";
-        s << "...String with ^ anchor:    " << path_string << "\n";
-        s << "...String with no ^ anchor: " << first_string;
+        s << "...String with ^ anchor:    " << path_string.get_string() << "\n";
+        s << "...String with no ^ anchor: " << first_string.get_string();
         addWarning(s.str());
         warn_caret_start = true;
       }
@@ -99,37 +132,42 @@ TestGenerator::gen_initial_strings()
       if (all_end_with_dollar && !end_with_dollar) {
         stringstream s;
         s << "ANCHOR WARNING: Some but not all strings end with a $ anchor\n";
-        s << "...String with $ anchor:    " << first_string << "\n";
-        s << "...String with no $ anchor: " << path_string;
+        s << "...String with $ anchor:    " << first_string.get_string() << "\n";
+        s << "...String with no $ anchor: " << path_string.get_string();
         addWarning(s.str());
         warn_dollar_end = true;
       }
       if (!all_end_with_dollar && end_with_dollar) {
         stringstream s;
         s << "ANCHOR WARNING: Some but not all strings end with a $ anchor\n";
-        s << "...String with $ anchor:    " << path_string << "\n";
-        s << "...String with no $ anchor: " << first_string;
+        s << "...String with $ anchor:    " << path_string.get_string() << "\n";
+        s << "...String with no $ anchor: " << first_string.get_string();
         addWarning(s.str());
         warn_dollar_end = true;
       }
     }
   }
-}
-
-void
-TestGenerator::add_to_test_strings(string s)
-{
-  if (find(test_strings.begin(), test_strings.end(), s) == test_strings.end()) {
-    test_strings.push_back(s);
+  if(warn_duplicate_character_set) {
+    stringstream s;
+    s << "WARNING: Found duplicate character set";
+    addWarning(s.str());
   }
 }
 
 void
-TestGenerator::add_to_test_strings(set <string> strs)
+TestGenerator::add_to_test_strings(StringPath s)
 {
-  set <string>::iterator it;
-  for (it = strs.begin(); it != strs.end(); it++)
-    add_to_test_strings(*it);
+  test_strings.push_back(s);
+}
+
+void
+TestGenerator::add_to_test_strings(set <StringPath, spcompare> strs)
+{
+  set <StringPath, spcompare>::iterator it;
+  for (it = strs.begin(); it != strs.end(); it++) {
+    StringPath ptr = *it;
+    add_to_test_strings(ptr);
+  }
 }
 
 void
@@ -137,7 +175,7 @@ TestGenerator::gen_evil_strings()
 {
   vector <Path>::iterator path_iter;
   for (path_iter = paths.begin(); path_iter != paths.end(); path_iter++) {
-    set <string> evil_strings = path_iter->gen_evil_strings(punct_marks);
+    set <StringPath, spcompare> evil_strings = path_iter->gen_evil_strings(punct_marks);
     add_to_test_strings(evil_strings);
   }
 }

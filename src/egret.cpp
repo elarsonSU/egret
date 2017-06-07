@@ -22,12 +22,14 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include "NFA.h"
 #include "ParseTree.h"
 #include "Scanner.h"
 #include "Stats.h"
 #include "TestGenerator.h"
 #include "error.h"
+
 using namespace std;
 
 static bool debug_mode = false;
@@ -72,7 +74,7 @@ run_engine(string regex, string base_substring, bool debug = false, bool stat = 
     // generate tests
     TestGenerator gen(nfa, base_substring, tree.get_punct_marks());
     test_strings = gen.gen_test_strings();
-
+    
     // print debug info
     if (debug_mode) {
       cout << "RegEx: " << regex << endl;

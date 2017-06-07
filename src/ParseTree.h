@@ -84,6 +84,7 @@
 
 #include <set>
 #include <cassert>
+#include <unordered_map>
 #include "Scanner.h"
 #include "CharSet.h"
 #include "Stats.h"
@@ -95,6 +96,7 @@ typedef enum
   CONCAT_NODE,
   REPEAT_NODE,
   GROUP_NODE,
+  BACKREFERENCE_NODE,
   CHARACTER_NODE,
   CHAR_SET_NODE,
   CARET_NODE,
@@ -106,6 +108,16 @@ struct ParseNode
 {
   ParseNode(NodeType t, ParseNode *l, ParseNode *r) {
     type = t;
+    left = l;
+    right = r;
+    char_set = NULL;
+  }
+
+  ParseNode(NodeType t, string _name, int _num, ParseNode *l, ParseNode *r) {
+    assert(t == GROUP_NODE);
+    type = t;
+    name = _name;
+    group_num = _num;
     left = l;
     right = r;
     char_set = NULL;
@@ -128,6 +140,16 @@ struct ParseNode
     character = c;
   }
 
+  ParseNode(NodeType t, int _backref_value, string _name) {
+    assert(t == BACKREFERENCE_NODE);
+    type = t;
+    left = NULL;
+    right = NULL;
+    backref_value = _backref_value;
+    name = _name;
+    backref_id = 0;
+  }
+
   ParseNode(NodeType t, ParseNode *l, int lower, int upper) {
     assert(t == REPEAT_NODE);
     type = t;
@@ -145,6 +167,10 @@ struct ParseNode
   char character;	// For CHARACTER_NODE
   int repeat_lower;	// For REPEAT_NODE
   int repeat_upper;	// For REPEAT_NODE (-1 for no limit)
+  int backref_value;  // For BACKREFERENCE_NODE
+  int backref_id;  // For BACKREFERENCE_NODE
+  int group_num;  // For BACKREFERENCE_NODE and GROUP_NODE
+  string name;  // For BACKREFERENCE_NODE
 };
 
 class ParseTree {
@@ -171,6 +197,8 @@ private:
   ParseNode *root;		// root of parse tree
   Scanner scanner;		// scanner
   set<char> punct_marks;	// set of punctuation marks
+  unordered_map<string, int> group_names {};  // set of group names and corresponding group numbers
+  int backreference_count; // number of backreferences encountered
 
   // creation functions
   ParseNode *expr();
@@ -189,6 +217,8 @@ private:
 
   // print the tree
   void print_tree(ParseNode *node, unsigned offset);
+  void count_groups();
+  int count_g(ParseNode *node, unsigned offset, int count);
 
   // gather stats
   struct ParseTreeStats {
@@ -196,6 +226,7 @@ private:
     int concat_nodes;
     int repeat_nodes;
     int group_nodes;
+    int backreference_nodes;
     int character_nodes;
     int caret_nodes;
     int dollar_nodes;

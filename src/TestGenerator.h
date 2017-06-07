@@ -30,13 +30,16 @@
 #include <vector>
 #include "NFA.h"
 #include "Path.h"
+#include "StringPath.h"
 using namespace std;
 
 class TestGenerator {
 
 public:
 
-  TestGenerator(NFA n, string b, set <char> p) { nfa = n; base_substring = b; punct_marks = p;}
+  TestGenerator(NFA n, string b, set <char> p) { nfa = n; 
+base_substring.add_string(b); 
+punct_marks = p;}
 
   // generate test strings
   vector <string> gen_test_strings();
@@ -47,19 +50,19 @@ public:
 private:
 
   NFA nfa;				// NFA to traverse
-  string base_substring;		// base string for regex strings
+  StringPath base_substring;    // base string for regex strings
   set <char> punct_marks;		// set of punct marks
   vector <Path> paths;			// list of paths
-  vector <string> test_strings;		// list of test strings
-  
+  vector <StringPath> test_strings;     // list of test strings
+
   // generates initial set of strings
   void gen_initial_strings();
 
   // adds a string to test string vector (unless it is already there)
-  void add_to_test_strings(string s);
+  void add_to_test_strings(StringPath s);
 
   // adds a set of strings to test string vector
-  void add_to_test_strings(set <string> strs);
+  void add_to_test_strings(set <StringPath, spcompare> strs);
 
   // generates additional evil strings
   void gen_evil_strings();

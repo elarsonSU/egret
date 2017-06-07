@@ -25,6 +25,7 @@
 #include <set>
 #include <string>
 #include "CharSet.h"
+#include "StringPath.h"
 using namespace std;
 
 class RegexString {
@@ -37,15 +38,15 @@ public:
     repeat_upper = upper;
   }
 
-  void set_path_prefix(string p) { path_prefix = p; }
-  void set_substring(string s) { substring = s; }
-  string get_substring() { return substring; }
+  void set_path_prefix(StringPath p) { path_prefix = p; }
+  void set_substring(StringPath s) { substring = s; }
+  StringPath get_substring() { return substring; }
 
   // process minimum iterations string
-  void process_min_iter_string(string &min_iter_string);
+  void process_min_iter_string(StringPath *min_iter_string);
 
   // generate evil strings
-  set <string> gen_evil_strings(string path_string, const set <char> &punct_marks);
+  set <StringPath, spcompare> gen_evil_strings(StringPath path_string, const set <char> &punct_marks);
 
   // print the regex string
   void print();
@@ -54,8 +55,8 @@ private:
   CharSet *char_set;		// corresponding character set
   int repeat_lower;     	// lower bound for string
   int repeat_upper;     	// upper bound for string
-  string path_prefix;           // path string up to visiting this node
-  string substring;             // substring corresponding to this string
+  StringPath path_prefix;           // path string up to visiting this node
+  StringPath substring;             // substring corresponding to this string
 };
 
 #endif // REGEX_STRING_H

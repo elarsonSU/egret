@@ -24,46 +24,90 @@
 #include <string>
 #include <vector>
 #include "Edge.h"
+#include "StringPath.h"
 using namespace std;
 
-string
+StringPath
 Edge::get_substring()
 {
+  StringPath p;
+  
   switch (type) {
   case CHARACTER_EDGE:
-    return string(1, character);
+    p.add_char(character);
+    return p;
   case CHAR_SET_EDGE:
-    return string(1, char_set->get_valid_character());
+    p.add_char(char_set->get_valid_character());
+    return p;
   case STRING_EDGE:
     return regex_str->get_substring();
   case END_LOOP_EDGE:
     return regex_loop->get_substring();
+  case BACKREFERENCE_EDGE:
+    {
+      p.add_backreference(num, id);
+      return p;
+    }
+  case BEGIN_GROUP_EDGE:
+    {
+      p.add_begin_group(num);
+      return p;
+    }
+  case END_GROUP_EDGE:
+    {
+      p.add_end_group(num);
+      return p;
+    }
   default:
-    return "";
+    return p;
   }
 }
 
 void
-Edge::process_min_iter_string(string &min_iter_string)
+Edge::process_min_iter_string(StringPath *min_iter_string)
 {
   switch (type) {
   case CHARACTER_EDGE:
   case CHAR_SET_EDGE:
-    min_iter_string += get_substring();
-    break;
+    {
+      StringPath substring = get_substring();
+      if(substring.path.size() > 0) {
+        min_iter_string->add_path(substring); // add substring to path
+      }
+      break;
+    }
   case STRING_EDGE:
     regex_str->process_min_iter_string(min_iter_string);
     break;
   case END_LOOP_EDGE:
     regex_loop->process_min_iter_string(min_iter_string);
     break;
+    // todo - future work, add begin group, end group, and backreference to min iter string
+    /*case BEGIN_GROUP_EDGE:
+    {
+      StringPath substring = get_substring();
+      min_iter_string->add_path(substring);
+      break;
+    }
+  case END_GROUP_EDGE:
+    {
+      StringPath substring = get_substring();
+      min_iter_string->add_path(substring);
+      break;
+    }
+  case BACKREFERENCE_EDGE:
+    {
+      StringPath substring = get_substring();
+      min_iter_string->add_path(substring);
+      break;
+      }*/
   default:
     ;
   }
 }
 
 bool
-Edge::process_edge_in_path(string path_prefix, string base_substring)
+Edge::process_edge_in_path(StringPath path_prefix, StringPath base_substring)
 {
   if (type == BEGIN_LOOP_EDGE) {
     regex_loop->process_begin_loop(path_prefix, processed);
@@ -88,13 +132,17 @@ Edge::process_edge_in_path(string path_prefix, string base_substring)
       return true;
     case END_LOOP_EDGE:
       return true;
+    case BACKREFERENCE_EDGE:
+      return true;
+    case BEGIN_GROUP_EDGE:
+      return true;
     default:
       return false;
   }
 }
 
-set <string>
-Edge::gen_evil_strings(string path_string, const set <char> &punct_marks)
+set <StringPath, spcompare>
+Edge::gen_evil_strings(StringPath path_string, const set <char> &punct_marks)
 {
   switch (type) {
     case CHAR_SET_EDGE:
@@ -103,12 +151,36 @@ Edge::gen_evil_strings(string path_string, const set <char> &punct_marks)
       return regex_str->gen_evil_strings(path_string, punct_marks);
     case END_LOOP_EDGE:
       return regex_loop->gen_evil_strings(path_string);
+    case BACKREFERENCE_EDGE:
+    {
+      set <StringPath, spcompare> empty;
+      return empty;
+    }
+  case BEGIN_GROUP_EDGE:
     default:
     {
-      set <string> empty;
+      set <StringPath, spcompare> empty;
       return empty;
     }
   }
+}
+
+string
+Edge::get_charset_as_string()
+{
+  string s = "";
+  
+  if (char_set->only_has_characters()) {
+    s = char_set->get_charset_as_string();
+  }
+  
+  return s;
+}
+
+bool
+Edge::is_charset_complemented()
+{
+  return char_set->is_charset_complemented();
 }
 
 void
@@ -147,5 +219,13 @@ Edge::print()
   case EPSILON_EDGE:
     cout << "EPSILON" << endl;
     break;
-  }
+  case BACKREFERENCE_EDGE:
+    cout << "BACKREFERENCE id:" << id << " " << name << " " << num << endl;
+    break;
+  case BEGIN_GROUP_EDGE:
+    cout << "BEGIN GROUP " << num << endl;
+    break;
+  case END_GROUP_EDGE:
+    cout << "END GROUP " << num << endl;
+  } 
 }

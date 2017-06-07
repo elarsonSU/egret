@@ -336,19 +336,20 @@ Scanner::get_next_char(string in, unsigned int &idx)
 Token
 Scanner::process_octal(string in, unsigned int &idx, char first_digit)
 {
+  bool octal_found = false;
   bool only_one_digit = false;
   bool has_three_digits = false;
   char second_digit;
   char third_digit;
-
+  Token token;
+ 
   // grab the second digit if one exists
   if (idx + 1 >= in.length()) {
     only_one_digit = true;
   } else {
     second_digit = in[idx + 1];
-    if (second_digit < '0' || second_digit > '7') {
+    if (second_digit < '0' || second_digit > '9')
       only_one_digit = true;
-    }
   }
 
   // only one digit - either null or backreference (both are unsupported)
@@ -356,42 +357,49 @@ Scanner::process_octal(string in, unsigned int &idx, char first_digit)
     if (first_digit == '0') {
       throw EgretException("ERROR: contains unsupported character \\0");
     } else {
-      stringstream s;
-      s << "ERROR: contains unsupported backreference value \\" << first_digit;
-      throw EgretException(s.str());
+      token.type = BACKREFERENCE;
+      token.backref_value = first_digit - '0';
+      token.name = "";
+      return token;
     }
   }
 
   // grab the third digit if one exists
   if (idx + 2 < in.length()) {
     third_digit = in[idx + 2];
-    if (third_digit >= '0' && third_digit <= '7') {
+    if (third_digit >= '0' && third_digit <= '9') {
       has_three_digits = true;
+      octal_found = true;
     }
   }
 
   // determine the octal value
-  int octal_value;
-  if (has_three_digits) {
-    octal_value = ((first_digit - '0') * 64) + ((second_digit - '0') * 8) +
-      (third_digit -'0');
-    idx += 2;
+  if (octal_found) {
+    int octal_value;
+    if (has_three_digits) {
+      octal_value = ((first_digit - '0') * 64) + ((second_digit - '0') * 8) +
+        (third_digit -'0');
+      idx += 2;
+    } else {
+      octal_value = ((first_digit - '0') * 8) + (second_digit - '0');
+      idx++;
+    }
+
+    // check the validity of the octal value
+    if (octal_value < 32 || octal_value > 126) {
+      stringstream s;
+      s << "ERROR: contains unsupported octal value " << octal_value;
+      throw EgretException(s.str());
+    }
+
+    token.type = CHARACTER;
+    token.character = octal_value;
   } else {
-    octal_value = ((first_digit - '0') * 8) + (second_digit - '0');
+    token.type = BACKREFERENCE;
+    token.backref_value = ((first_digit - '0') * 10) + (second_digit - '0');
     idx++;
+    token.name = "";
   }
-
-  // check the validity of the octal value
-  if (octal_value < 32 || octal_value > 126) {
-    stringstream s;
-    s << "ERROR: contains unsupported octal value " << octal_value;
-    throw EgretException(s.str());
-  }
-
-  // return the octal value
-  Token token;
-  token.type = CHARACTER;
-  token.character = octal_value;
 
   return token;
 }
@@ -477,15 +485,30 @@ Scanner::process_extension(string in, unsigned int &idx)
   {
     char c = get_next_char(in, idx);
     if (c == '=') {
-      throw EgretException("ERROR: Unsupported named backreference: (?P=");
+      stringstream s;
+      while (c != ')') {
+	c = get_next_char(in, idx);
+	if  (c != ')')
+	  s << c;
+      }
+      idx--;
+      token.type = BACKREFERENCE;
+      token.backref_value = 0;
+      token.name = s.str();
     }
-    if (c != '<') {
+    else if (c != '<') {
       throw EgretException("ERROR: Improperly specified named group - expected < after (?P");
     }
-    while (c != '>') {
-      c = get_next_char(in, idx);
+    else {
+      stringstream s;
+      while (c != '>') {
+        c = get_next_char(in, idx);
+	if (c != '>')
+	  s << c;
+      }
+      token.type = NAMED_GROUP_EXT;
+      token.name = s.str();
     }
-    token.type = NAMED_GROUP_EXT;
     break;
   }
 
@@ -702,6 +725,24 @@ Scanner::get_character()
   return tokens[index].character;
 }
 
+string
+Scanner::get_name()
+{
+  TokenType type = get_type();
+  assert(type == BACKREFERENCE || type == NAMED_GROUP_EXT);
+
+  return tokens[index].name;
+}
+
+int
+Scanner::get_backref_value()
+{
+  TokenType type = get_type();
+  assert(type == BACKREFERENCE);
+
+  return tokens[index].backref_value;
+}
+
 void
 Scanner::advance()
 {
@@ -727,7 +768,8 @@ Scanner::is_concat()
     prev_type == DOLLAR ||
     prev_type == WORD_BOUNDARY ||
     prev_type == CHAR_CLASS ||
-    prev_type == RIGHT_BRACKET;
+    prev_type == RIGHT_BRACKET ||
+    prev_type == BACKREFERENCE;
 
   bool invalid_next_type =
     next_type == ALTERNATION ||
@@ -812,6 +854,7 @@ Scanner::token_type_to_str(TokenType type)
   case NO_GROUP_EXT:	return "NO_GROUP_EXT";
   case NAMED_GROUP_EXT: return "NAMED_GROUP_EXT";
   case IGNORED_EXT: 	return "IGNORED_EXT";
+  case BACKREFERENCE:   return "BACKREFERENCE";
   case ERR: 		return "<ERROR> (or end of regex)";
   default:  
     throw EgretException("ERROR (INTERNAL): unexpected token type");

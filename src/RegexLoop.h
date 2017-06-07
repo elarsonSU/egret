@@ -24,6 +24,7 @@
 
 #include <set>
 #include <string>
+#include "StringPath.h"
 using namespace std;
 
 class RegexLoop {
@@ -36,19 +37,19 @@ public:
   }
 
   // get substring - additional iterations for lower bounds greater than 1
-  string get_substring();
+  StringPath get_substring();
 
   // process minimum iterations string
-  void process_min_iter_string(string &min_iter_string);
+  void process_min_iter_string(StringPath *min_iter_string);
 
   // process begin loop edge
-  void process_begin_loop(string prefix, bool processed);
+  void process_begin_loop(StringPath prefix, bool processed);
 
   // process end loop edge
-  void process_end_loop(string prefix, bool processed);
+  void process_end_loop(StringPath prefix, bool processed);
 
   // generate evil strings
-  set <string> gen_evil_strings(string path_string);
+  set <StringPath, spcompare> gen_evil_strings(StringPath path_string);
 
   // print the regex loop
   void print();
@@ -57,10 +58,10 @@ private:
 
   int repeat_lower;     	// lower bound for repeat quantifiers 
   int repeat_upper;     	// upper bound for repeat quantifiers (-1 if no bound)
-  string path_prefix;           // path string up to visiting this node
-  string path_substring;        // substring corresponding to this string
-  string curr_prefix;           // current path string up to visiting this node
-  string curr_substring;        // current substring corresponding to this string
+  StringPath path_prefix;           // path string up to visiting this node
+  StringPath path_substring;        // substring corresponding to this string
+  StringPath curr_prefix;           // current path string up to visiting this node
+  StringPath curr_substring;        // current substring corresponding to this string
 };
 
 #endif // REGEX_LOOP_H

@@ -25,6 +25,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "StringPath.h"
 using namespace std;
 
 typedef enum
@@ -48,7 +49,7 @@ public:
 
   CharSet() { complement = false; }
 
-  void set_path_prefix(string p) { path_prefix = p; }
+  void set_path_prefix(StringPath p) { path_prefix = p; }
   void set_complement(bool c) { complement = c; }
   bool is_complement() { return complement; }
 
@@ -62,10 +63,22 @@ public:
   char get_valid_character();
 
   // generate evil strings
-  set <string> gen_evil_strings(string path_string, const set <char> &punct_marks);
+  set <StringPath, spcompare> gen_evil_strings(StringPath path_string, const set <char> &punct_marks);
 
   // returns true if character set allows punctuation
   bool allows_punctuation();
+
+  void check_invalid_punctuation();
+
+  void check_single_punctuation();
+
+  void check_only_digits_and_punctuation();
+
+  string get_charset_as_string();
+
+  bool only_has_characters();
+
+  bool is_charset_complemented();
 
   // print the character set
   void print();
@@ -74,7 +87,7 @@ private:
 
   vector <CharSetItem> items;	// set of items comprising the set
   bool complement;		// true if set is complemented
-  string path_prefix;		// path string up to visiting this node
+  StringPath path_prefix;		// path string up to visiting this node
   string substring;		// substring corresponding to this char set
 
   // determines if a character is valid in a complemented character set
