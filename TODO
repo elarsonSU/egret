@@ -1,18 +1,10 @@
-Currently:
-- Revise stats and bugs.csv
-- Refactor / clean up
-- Clean up web interface
-- Update python anywhere
-- Update Git repository
-- Remove degret from make all
-- Review enhancements / checking
-
 Enhancements:
-- Better duplicated character sets in character set warnings.
+- Refactoring for backreferences
+- Refactoring for test string generation: rely on Path more and apply evil
+string generation to each evil element as appropriate, may make TestString
+and the substring mechanism less necessary.
+- Better error messages for checker
 - Add errors for carets and dollars inside loops such (^abc)+
-- String where all optional items (? and *) are not selected.
-  * Misses single period on \d*\.\d*
-- Replace clear alphanumeric strings [\w+] with a word or number.
 - Double every punctuation mark.
 - Add a space before and after each punctuation mark (separately).
 - Remove each space (separately).

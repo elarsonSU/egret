@@ -30,7 +30,7 @@ HDR := CharSet.h Edge.h NFA.h RegexLoop.h RegexString.h ParseTree.h \
        Path.h Scanner.h Stats.h TestGenerator.h TestString.h error.h
 OBJ := $(patsubst %.cpp, %.o, $(SRC))
 
-all: libegret.a egret_ext degret
+all: libegret.a egret_ext
 
 libegret.a: $(OBJ)
 	ar -r $@ $(OBJ)
