@@ -27,120 +27,99 @@
 using namespace std;
 
 void
-RegexString::process_min_iter_string(StringPath *min_iter_string)
+RegexString::gen_min_iter_string(TestString &min_iter_string)
 {
   if (repeat_lower != 0) {
-    min_iter_string->add_path(get_substring());
+    min_iter_string.append(get_substring());
   }
 }
 
-set <StringPath, spcompare>
-RegexString::gen_evil_strings(StringPath path_string, const set <char> &punct_marks)
+vector <TestString>
+RegexString::gen_evil_strings(TestString test_string, const set <char> &punct_marks)
 {
-  set <StringPath, spcompare> evil_substrings;
-  set <StringPath, spcompare> evil_strings;
+  vector <TestString> evil_substrings; // set of evil substrings
+
+  // create suffix: substring after the loop
+  int start = prefix.size() + substring.size();
+  TestString suffix = test_string.create_substr(start);
 
   // insert one letter strings
-  StringPath a;
-  a.add_string("");
-  evil_substrings.insert(a);
-  StringPath b;
-  b.add_string("_");
-  evil_substrings.insert(b);
-  StringPath c;
-  c.add_string("6");
-  evil_substrings.insert(c);
-  StringPath d;
-  d.add_string(" ");
-  evil_substrings.insert(d);
-  StringPath e;
-  e.add_path_item(substring.path[0]);
-  evil_substrings.insert(e);
+  add_evil_substring(evil_substrings, "");
+  add_evil_substring(evil_substrings, "_");
+  add_evil_substring(evil_substrings, "6");
+  add_evil_substring(evil_substrings, " ");
+
+  // insert string with just first character of substring
+  evil_substrings.push_back(substring.create_substr(0, 1));
+
+  // split test string into two halves
+  unsigned int half = substring.size() / 2;
+  TestString before = substring.create_substr(0, half);
+  TestString after = substring.create_substr(half);
 
   // insert strings with added digit, space, and underscore
-  int half = substring.path.size() / 2;
-  StringPath first_half;
-  for(int i = 0; i < half; i++) first_half.add_path_item(substring.path[i]);
-  StringPath second_half;
-  int max = substring.path.size();
-  for(int i = half; i < max; i++) second_half.add_path_item(substring.path[i]);
+  add_evil_substring(evil_substrings, before, "4", after);
+  add_evil_substring(evil_substrings, before, " ", after);
+  add_evil_substring(evil_substrings, before, "_", after);
 
-  StringPath f;
-  f.add_path(first_half);
-  f.add_string("4");
-  f.add_path(second_half);
-  evil_substrings.insert(f);
-  StringPath g;
-  g.add_path(first_half);
-  g.add_string(" ");
-  g.add_path(second_half);
-  evil_substrings.insert(g);
-  StringPath h;
-  h.add_path(first_half);
-  h.add_string("_");
-  h.add_path(second_half);
-  evil_substrings.insert(h);
+  // insert all uppercase, all lowercase, and mixed case where
+  // the first char is lowercase and the second char is uppercase
+  string all_upper = substring.get_string();
+  string all_lower = all_upper;
+  string mixed = all_upper;
 
-  // insert all uppercase and all lowercase
-  StringPath all_upper;
-  StringPath all_lower;
-  for (unsigned int i = 0; i < substring.path.size(); i++) {
-    all_upper.add_path_item(substring.path[i]);
-    all_lower.add_path_item(substring.path[i]);
-    char s = substring.path[i].item;
-    s = std::toupper(s, std::locale());
-    all_upper.path[i].item = s;
-    s = std::tolower(s, std::locale());
-    all_lower.path[i].item = s;
+  for (unsigned int i = 0; i < substring.size(); i++) {
+    all_upper[i] = toupper(all_upper[i], locale());
+    all_lower[i] = tolower(all_lower[i], locale());
+    if (i == 0) {
+      mixed[i] = tolower(mixed[i], locale());
+    } else if (i == 1) {
+      mixed[i] = toupper(mixed[i], locale());
+    }
   }
-  evil_substrings.insert(all_upper);
-  evil_substrings.insert(all_lower);
-
-  // insert mixed case where first character is lowercase and second character
-  // is uppercase
-  StringPath first;
-  first.add_path_item(substring.path[0]);
-  char s1 = first.path[0].item;
-  s1 = std::tolower(s1, std::locale());
-  first.path[0].item = s1;
-  StringPath second;
-  second.add_path_item(substring.path[1]);
-  char s2 = second.path[0].item;
-  s2 = std::toupper(s2, std::locale());
-  second.path[0].item = s2;
-  StringPath mixed;
-  mixed.add_path(first);
-  mixed.add_path(second);
-  for(unsigned int i = 2; i < substring.path.size(); i++) mixed.add_path_item(substring.path[i]);
-  evil_substrings.insert(mixed);  
+  add_evil_substring(evil_substrings, all_upper);
+  add_evil_substring(evil_substrings, all_lower);
+  add_evil_substring(evil_substrings, mixed);
   
+  // insert strings for each punctation mark
   if (char_set->allows_punctuation()) {
     set <char>::iterator it;
     for (it = punct_marks.begin(); it != punct_marks.end(); it++) {
-      StringPath p;
-      string s = string(1, *it);
-      p.add_string(s);
-      evil_substrings.insert(p);
+      add_evil_substring(evil_substrings, string(1, *it));
     }
   }
 
   // generate the new full strings
-  StringPath path_suffix;
-  int start = path_prefix.path.size() + substring.path.size();
-  int end = path_string.path.size();
-  for(int i = start; i < end; i++) path_suffix.add_path_item(path_string.path[i]);
-  set <StringPath, spcompare>::iterator it;
-  
-  for (it = evil_substrings.begin(); it != evil_substrings.end(); it++) {
-    StringPath new_string;
-    new_string.add_path(path_prefix);
-    StringPath ptr = *it;
-    new_string.add_path(ptr);
-    new_string.add_path(path_suffix);
-    evil_strings.insert(new_string);
+  vector <TestString> evil_strings;
+  vector <TestString>::iterator tsi;
+  for (tsi = evil_substrings.begin(); tsi != evil_substrings.end(); tsi++) {
+    TestString new_string;
+    new_string.append(prefix);
+    new_string.append(*tsi);
+    new_string.append(suffix);
+    evil_strings.push_back(new_string);
   }
 
   return evil_strings;
+}
+
+void
+RegexString::add_evil_substring(vector <TestString> &evil_substrings, string s)
+{
+  TestString t;
+  t.append(s);
+  evil_substrings.push_back(t);
+}
+
+void
+RegexString::add_evil_substring(vector <TestString> &evil_substrings,
+   TestString before, string s, TestString after)
+{
+  TestString t;
+  t.append(before);
+  t.append(s);
+  t.append(after);
+  evil_substrings.push_back(t);
 }
 
 void

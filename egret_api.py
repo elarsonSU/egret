@@ -22,6 +22,12 @@ import re
 import egret_ext
 
 def run_egret(regexStr, baseSubstring, testList):
+    try:
+        regex = re.compile(regexStr)
+    except re.error as e:
+        status = "ERROR (compiler error): Regular expression did not compile: " + e.msg
+        return ([], [], status, [])
+        
     inputStrs = egret_ext.run(regexStr, baseSubstring, False, False)
     status = inputStrs[0]
     if status[0:5] == "ERROR":
@@ -34,7 +40,6 @@ def run_egret(regexStr, baseSubstring, testList):
     inputStrs = inputStrs[1:]
     matches = []
     nonMatches = []
-    regex = re.compile(regexStr)
 
     inputStrs = sorted(list(set(inputStrs) | set(testList)))
     

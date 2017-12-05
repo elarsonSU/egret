@@ -462,7 +462,7 @@ NFA::add_stats(Stats &stats)
       Edge *edge = edge_table[from][to];
       if (edge != NULL) {
         edge_count++;
-	switch (edge->getType()) {
+	switch (edge->get_type()) {
 	  case CHARACTER_EDGE:
 	    char_count++;
 	    break;

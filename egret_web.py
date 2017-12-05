@@ -21,10 +21,10 @@
 
 # all the imports
 import os
-import sqlite3
 from flask import Flask, request, url_for, render_template, flash, Response, redirect
 from contextlib import closing
 import egret_api
+import sqlite3
 
 # global variables (for sessions)
 session = [] # Holds all of the strings currently being tested against the regex
@@ -128,10 +128,6 @@ def process_submit():
     # render webpage
     return render_template('egret.html', data=data, session=session)
             
-@app.route('/regex_gen', methods=['GET', 'POST'])
-def generate_regex():
-    return render_template('regex_gen.html')
-
 @app.route('/download')
 def download_file():
     data = []

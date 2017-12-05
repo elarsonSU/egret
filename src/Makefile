@@ -18,19 +18,19 @@
 
 CXX      := g++
 PYTHON   := python3
-EXT_PATH := build/lib.linux-x86_64-3.5
-EXT_LIB  := egret_ext.cpython-35m-x86_64-linux-gnu.so
+EXT_PATH := build/lib.linux-x86_64-3.4
+EXT_LIB  := egret_ext.cpython-34m.so
 
 CXXFLAGS := -Wall -I. -g -O0 -fPIC -std=c++11
 LDFLAGS :=
 
-SRC := StringPath.cpp CharSet.cpp Edge.cpp NFA.cpp RegexLoop.cpp RegexString.cpp ParseTree.cpp \
-       Path.cpp Scanner.cpp Stats.cpp TestGenerator.cpp egret.cpp error.cpp
-HDR := StringPath.h CharSet.h Edge.h NFA.h RegexLoop.h RegexString.h ParseTree.h \
-       Path.h Scanner.h Stats.h TestGenerator.h error.h
+SRC := CharSet.cpp Edge.cpp NFA.cpp RegexLoop.cpp RegexString.cpp ParseTree.cpp \
+       Path.cpp Scanner.cpp Stats.cpp TestGenerator.cpp TestString.cpp egret.cpp error.cpp
+HDR := CharSet.h Edge.h NFA.h RegexLoop.h RegexString.h ParseTree.h \
+       Path.h Scanner.h Stats.h TestGenerator.h TestString.h error.h
 OBJ := $(patsubst %.cpp, %.o, $(SRC))
 
-all: libegret.a egret_ext
+all: libegret.a egret_ext degret
 
 libegret.a: $(OBJ)
 	ar -r $@ $(OBJ)

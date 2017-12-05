@@ -1,5 +1,11 @@
-Command Line Interface:
-- Add exception handling to catch re.compile errors.
+Currently:
+- Revise stats and bugs.csv
+- Refactor / clean up
+- Clean up web interface
+- Update python anywhere
+- Update Git repository
+- Remove degret from make all
+- Review enhancements / checking
 
 Enhancements:
 - Better duplicated character sets in character set warnings.

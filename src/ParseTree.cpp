@@ -22,10 +22,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if 0
-#include <cctype>
-#include <cstdlib>
-#endif
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -50,7 +46,7 @@ ParseTree::build(Scanner &_scanner)
   
   if (scanner.get_type() != ERR) {
     stringstream s;
-    s << "ERROR: Parse error - expected end of regex but received " << scanner.get_type_str();
+    s << "ERROR (parse error): expected end of regex but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
   count_groups();
@@ -92,7 +88,7 @@ ParseTree::expr()
   // check for empty alternation clauses
   // both empty: abort with an error
   if (left == NULL && right == NULL) {
-    throw EgretException("ERROR: pointless alternation (both clauses are empty)");
+    throw EgretException("ERROR (pointless alternation): both clauses are empty");
   }
   // left empty: return right?
   else if (left == NULL) {
@@ -220,7 +216,7 @@ ParseTree::group()
 
   if (scanner.get_type() != LEFT_PAREN) {
     stringstream s;
-    s << "ERROR: Parse error - expected '(' but received " << scanner.get_type_str();
+    s << "ERROR (parse error): expected '(' but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
   scanner.advance();
@@ -253,7 +249,7 @@ ParseTree::group()
 
     if (scanner.get_type() != RIGHT_PAREN) {
       stringstream s;
-      s << "ERROR: Parse error - expected ')' but received " << scanner.get_type_str();
+      s << "ERROR (parse error): expected ')' but received " << scanner.get_type_str();
       throw EgretException(s.str());
     }
     scanner.advance();
@@ -272,47 +268,47 @@ ParseNode *
 ParseTree::character()
 {
   ParseNode *character_node;
+  TokenType type = scanner.get_type();
 
-  if (scanner.get_type() == CHARACTER) {
+  if (type == CHARACTER) {
     char c = scanner.get_character();
     scanner.advance();
     character_node =  new ParseNode(CHARACTER_NODE, c);
-  }
-  else if (scanner.get_type() == CARET) {
-    scanner.advance();
-    return new ParseNode(CARET_NODE, NULL, NULL);
-  }
-  else if (scanner.get_type() == DOLLAR) {
-    scanner.advance();
-    return new ParseNode(DOLLAR_NODE, NULL, NULL);
-  }
-  else if (scanner.get_type() == HYPHEN) {
-    scanner.advance();
-    character_node =  new ParseNode(CHARACTER_NODE, '-');
-  }
-  else if (scanner.get_type() == WORD_BOUNDARY) {
-    scanner.advance();
-    return new ParseNode(IGNORED_NODE, NULL, NULL);
-  }
-  else if (scanner.get_type() == BACKREFERENCE) {
-    character_node = new ParseNode(BACKREFERENCE_NODE, scanner.get_backref_value(), scanner.get_name());
-    scanner.advance();
-  }
-  else {
-    stringstream s;
-    s << "ERROR: Parse error - expected character type but received " << scanner.get_type_str();
-    throw EgretException(s.str());
-  }
-
-  if(scanner.get_type() != BACKREFERENCE) {
-    char c = character_node->character;
     if (ispunct(c)) {
       if (punct_marks.find(c) == punct_marks.end()) {
         punct_marks.insert(c);
       }
     }
   }
-  
+  else if (type == CARET) {
+    scanner.advance();
+    return new ParseNode(CARET_NODE, NULL, NULL);
+  }
+  else if (type == DOLLAR) {
+    scanner.advance();
+    return new ParseNode(DOLLAR_NODE, NULL, NULL);
+  }
+  else if (type == HYPHEN) {
+    scanner.advance();
+    character_node =  new ParseNode(CHARACTER_NODE, '-');
+    if (punct_marks.find('-') == punct_marks.end()) {
+      punct_marks.insert('-');
+    }
+  }
+  else if (type == WORD_BOUNDARY) {
+    scanner.advance();
+    return new ParseNode(IGNORED_NODE, NULL, NULL);
+  }
+  else if (type == BACKREFERENCE) {
+    character_node = new ParseNode(BACKREFERENCE_NODE, scanner.get_backref_value(), scanner.get_name());
+    scanner.advance();
+  }
+  else {
+    stringstream s;
+    s << "ERROR (parse error): expected character type but received " << scanner.get_type_str();
+    throw EgretException(s.str());
+  }
+
   return character_node;
 }
 
@@ -346,7 +342,7 @@ ParseTree::char_set()
 
   if (scanner.get_type() != LEFT_BRACKET) {
     stringstream s;
-    s << "ERROR: Parse error - expected '[' but received " << scanner.get_type_str();
+    s << "ERROR (parse error): expected '[' but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
   scanner.advance();
@@ -361,7 +357,7 @@ ParseTree::char_set()
 
   if (scanner.get_type() != RIGHT_BRACKET) {
     stringstream s;
-    s << "ERROR: Parse error - expected ']' but received " << scanner.get_type_str();
+    s << "ERROR (parse error): expected ']' but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
   scanner.advance();
@@ -439,7 +435,7 @@ ParseTree::character_item()
   }
   else {
     stringstream s;
-    s << "ERROR: Parse error - expected character type but received " << scanner.get_type_str();
+    s << "ERROR (parse error): expected character type but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
   char c = char_set_item.character;
@@ -473,7 +469,7 @@ ParseTree::char_range_item()
 
   if (scanner.get_type() != CHARACTER) {
     stringstream s;
-    s << "ERROR: Parse error - expected character type but received " << scanner.get_type_str();
+    s << "ERROR (parse error): expected character type but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
   char start = scanner.get_character();
@@ -481,14 +477,14 @@ ParseTree::char_range_item()
 
   if (scanner.get_type() != HYPHEN) {
     stringstream s;
-    s << "ERROR: Parse error - expected hyphen but received " << scanner.get_type_str();
+    s << "ERROR (parse error): expected hyphen but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
   scanner.advance();
 
   if (scanner.get_type() != CHARACTER) {
     stringstream s;
-    s << "ERROR: Parse error - expected character type but received " << scanner.get_type_str();
+    s << "ERROR (parse error): expected character type but received " << scanner.get_type_str();
     throw EgretException(s.str());
   }
   char end = scanner.get_character();
@@ -501,7 +497,7 @@ ParseTree::char_range_item()
 
   if (!good_range) {
     stringstream s;
-    s << "ERROR: Bad range: " << start << "-" << end;
+    s << "ERROR (bad range): " << start << "-" << end;
     throw EgretException(s.str());
   }
 
@@ -511,7 +507,8 @@ ParseTree::char_range_item()
 }
 
 void
-ParseTree::print() {
+ParseTree::print()
+{
   cout << "Tree:" << endl;
   print_tree(root, 0);
   cout << endl;
@@ -542,7 +539,8 @@ ParseTree::print_tree(ParseNode *node, unsigned offset)
     cout << "<group ()>" << node->group_num << " " << node->name;
     break;
   case BACKREFERENCE_NODE:
-    cout << "<backreference ()> id=" << node->backref_id << ", " << node->backref_value << " " << node->name;
+    cout << "<backreference ()> id=" << node->backref_id << ", "
+      << node->backref_value << " " << node->name;
     break;
   case IGNORED_NODE:
     cout << "<ignored>";
@@ -578,7 +576,8 @@ ParseTree::count_groups()
   count_g(root, 0, 1);
 }
 
-int ParseTree::count_g(ParseNode *node, unsigned offset, int count)
+int
+ParseTree::count_g(ParseNode *node, unsigned offset, int count)
 {
   if (!node) return count;
 
@@ -609,12 +608,13 @@ int ParseTree::count_g(ParseNode *node, unsigned offset, int count)
 void
 ParseTree::add_stats(Stats &stats)
 {
-  ParseTreeStats tree_stats = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  ParseTreeStats tree_stats = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   gather_stats(root, tree_stats);
   stats.add("PARSE_TREE", "Alternation nodes", tree_stats.alternation_nodes);
   stats.add("PARSE_TREE", "Concat nodes", tree_stats.concat_nodes);
   stats.add("PARSE_TREE", "Repeat nodes", tree_stats.repeat_nodes);
-  stats.add("PARSE_TREE", "Group nodes", tree_stats.group_nodes);
+  stats.add("PARSE_TREE", "Group nodes (unnamed)", tree_stats.unnamed_group_nodes);
+  stats.add("PARSE_TREE", "Group nodes (named)", tree_stats.named_group_nodes);
   stats.add("PARSE_TREE", "Backreference nodes", tree_stats.backreference_nodes);
   stats.add("PARSE_TREE", "Caret nodes", tree_stats.caret_nodes);
   stats.add("PARSE_TREE", "Dollar nodes", tree_stats.dollar_nodes);
@@ -640,7 +640,10 @@ ParseTree::gather_stats(ParseNode *node, ParseTreeStats &tree_stats)
     tree_stats.repeat_nodes++;
     break;
   case GROUP_NODE:
-    tree_stats.group_nodes++;
+    if (node->name == "")
+      tree_stats.unnamed_group_nodes++;
+    else
+      tree_stats.named_group_nodes++;
     break;
   case BACKREFERENCE_NODE:
     tree_stats.backreference_nodes++;

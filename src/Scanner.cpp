@@ -69,17 +69,17 @@ Scanner::init(string in)
 	// \b is backspace in a character set (unsupported) and word boundary otherwise
         case 'b':
 	  if (in_set) {
-	    throw EgretException("ERROR: contains unsupported character \\b");
+	    throw EgretException("ERROR (unsupported): contains unsupported character \\b");
 	  }
 	  else {
 	    token.type = WORD_BOUNDARY;
-	    addWarning("IGNORED WARNING: Regex contains ignored \\b");
+	    addWarning("WARNING (ignored): Regex contains ignored element \\b");
 	  }
 	  break;
 	// \B is also treated as word boundary
 	case 'B':
 	  token.type = WORD_BOUNDARY;
-	  addWarning("IGNORED WARNING: Regex contains ignored \\B");
+	  addWarning("WARNING (ignored): Regex contains ignored element \\B");
 	  break;
 	// Escaped characters are unsupported
         case 'a':
@@ -91,7 +91,7 @@ Scanner::init(string in)
 	case 'p':
 	{
 	  stringstream s;
-	  s << "ERROR: contains unsupported character \\" << c;
+	  s << "ERROR (unsupported): contains unsupported character \\" << c;
 	  throw EgretException(s.str());
 	}
 	case '\\':
@@ -328,7 +328,7 @@ Scanner::get_next_char(string in, unsigned int &idx)
 {
   idx++;
   if (idx >= in.length()) {
-    throw EgretException("ERROR: Input string ended prematurely");
+    throw EgretException("ERROR (parse error): Input string ended prematurely");
   }
   return in[idx];
 }
@@ -355,7 +355,7 @@ Scanner::process_octal(string in, unsigned int &idx, char first_digit)
   // only one digit - either null or backreference (both are unsupported)
   if (only_one_digit) {
     if (first_digit == '0') {
-      throw EgretException("ERROR: contains unsupported character \\0");
+      throw EgretException("ERROR (unsupported): contains unsupported character \\0");
     } else {
       token.type = BACKREFERENCE;
       token.backref_value = first_digit - '0';
@@ -388,7 +388,7 @@ Scanner::process_octal(string in, unsigned int &idx, char first_digit)
     // check the validity of the octal value
     if (octal_value < 32 || octal_value > 126) {
       stringstream s;
-      s << "ERROR: contains unsupported octal value " << octal_value;
+      s << "ERROR (unsupported): contains unsupported octal value " << octal_value;
       throw EgretException(s.str());
     }
 
@@ -413,7 +413,7 @@ Scanner::process_hex(string in, unsigned int &idx, int num_digits)
     char d = get_next_char(in, idx);
     if (d != '0') {
       stringstream s;
-      s << "ERROR: Unsupported " << num_digits << "-digit hex number";
+      s << "ERROR (unsupported): Unsupported " << num_digits << "-digit hex number";
       throw EgretException(s.str());
     }
   }
@@ -435,7 +435,7 @@ Scanner::process_hex(string in, unsigned int &idx, int num_digits)
   }
   else {
     stringstream s;
-    s << "ERROR: Invalid hex digit " << first_digit;
+    s << "ERROR (parse error): Invalid hex digit " << first_digit;
     throw EgretException(s.str());
   }
   if (second_digit >= '0' && second_digit <= '9') {
@@ -449,14 +449,14 @@ Scanner::process_hex(string in, unsigned int &idx, int num_digits)
   }
   else {
     stringstream s;
-    s << "ERROR: Invalid hex digit " << second_digit;
+    s << "ERROR (parse error): Invalid hex digit " << second_digit;
     throw EgretException(s.str());
   }
 
   // check the validity of the hex value
   if (hex_value < 32 || hex_value > 126) {
     stringstream s;
-    s << "ERROR: contains unsupported hex value " << hex_value;
+    s << "ERROR (unsupported): contains unsupported hex value " << hex_value;
     throw EgretException(s.str());
   }
 
@@ -497,7 +497,7 @@ Scanner::process_extension(string in, unsigned int &idx)
       token.name = s.str();
     }
     else if (c != '<') {
-      throw EgretException("ERROR: Improperly specified named group - expected < after (?P");
+      throw EgretException("ERROR (unsupported): Improperly specified named group - expected < after (?P");
     }
     else {
       stringstream s;
@@ -517,7 +517,7 @@ Scanner::process_extension(string in, unsigned int &idx)
   case '!':
   {
     stringstream s;
-    s << "IGNORED WARNING: Regex contains ignored extension ?" << ext;
+    s << "WARNING (ignored): Regex contains ignored extension ?" << ext;
     addWarning(s.str());
     token.type = IGNORED_EXT;
     break;
@@ -528,13 +528,13 @@ Scanner::process_extension(string in, unsigned int &idx)
     char c = get_next_char(in, idx);
     if (c == '=' || c == '!') {
       stringstream s;
-      s << "IGNORED WARNING: Regex contains ignored extension ?<" << c;
+      s << "WARNING (ignored): Regex contains ignored extension ?<" << c;
       addWarning(s.str());
       token.type = IGNORED_EXT;
     }
     else {
       stringstream s;
-      s << "ERROR: Unsupported extension ?<" << c;
+      s << "ERROR (unsupported): Unsupported extension ?<" << c;
       throw EgretException(s.str());
     }
     break;
@@ -543,7 +543,7 @@ Scanner::process_extension(string in, unsigned int &idx)
   default:
   {
     stringstream s;
-    s << "ERROR: Unsupported extension ?" << ext;
+    s << "ERROR (unsupported): Unsupported extension ?" << ext;
     throw EgretException(s.str());
   }
 
@@ -613,7 +613,7 @@ Scanner::process_repeat(string in, unsigned int &idx)
     token.repeat_upper = token.repeat_lower;
     token.type = REPEAT;
     if (token.repeat_upper == 0) {
-      throw EgretException("ERROR: pointless repeat quantifier {0}");
+      throw EgretException("ERROR (pointless repeat): pointless repeat quantifier {0}");
     }
     return token;
   }
@@ -662,14 +662,14 @@ Scanner::process_repeat(string in, unsigned int &idx)
     // Check that lower bound is less than or equal to the upper bound
     if (token.repeat_lower > token.repeat_upper) {
       stringstream s;
-      s << "ERROR: Invalid repeat quantifier: lower bound " << token.repeat_lower
+      s << "ERROR (parse error): Invalid repeat quantifier: lower bound " << token.repeat_lower
 	<< " is greater than upper bound " << token.repeat_upper << endl;
       throw EgretException(s.str());
     }
 
     // Check for the nonsensical upper bound of zero {0,0}
     if (token.repeat_upper == 0) {
-      throw EgretException("ERROR: pointless repeat quantifier {0,0}");
+      throw EgretException("ERROR (pointless repeat): pointless repeat quantifier {0,0}");
     }
 
     token.type = REPEAT;
@@ -793,7 +793,7 @@ Scanner::is_char_range()
       tokens[index+2].type == CHARACTER) {
     if (tokens[index].character > tokens[index+2].character) {
       stringstream s;
-      s << "ERROR: Improperly formed range "
+      s << "ERROR (bad range): Improperly formed range "
         << tokens[index].character << "-"
 	<< tokens[index+2].character << endl;
       throw EgretException(s.str());
@@ -802,15 +802,15 @@ Scanner::is_char_range()
   }
   else if (tokens[index].type == CHARACTER &&
       tokens[index+2].type == CHAR_CLASS) {
-    throw EgretException("ERROR: Improperly constructed range using char class");
+    throw EgretException("ERROR (bad range): Improperly constructed range using char class");
   }
   else if (tokens[index].type == CHAR_CLASS &&
       tokens[index+2].type == CHARACTER) {
-    throw EgretException("ERROR: Improperly constructed range using char class");
+    throw EgretException("ERROR (bad range): Improperly constructed range using char class");
   }
   else if (tokens[index].type == CHAR_CLASS &&
       tokens[index+2].type == CHAR_CLASS) {
-    throw EgretException("ERROR: Improperly constructed range using char class");
+    throw EgretException("ERROR (bad range): Improperly constructed range using char class");
   }
   return false;
 }
@@ -857,7 +857,7 @@ Scanner::token_type_to_str(TokenType type)
   case BACKREFERENCE:   return "BACKREFERENCE";
   case ERR: 		return "<ERROR> (or end of regex)";
   default:  
-    throw EgretException("ERROR (INTERNAL): unexpected token type");
+    throw EgretException("ERROR (internal): unexpected token type");
   }
 }
 

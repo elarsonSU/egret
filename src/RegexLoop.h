@@ -22,9 +22,9 @@
 #ifndef REGEX_LOOP_H
 #define REGEX_LOOP_H
 
-#include <set>
 #include <string>
-#include "StringPath.h"
+#include <vector>
+#include "TestString.h"
 using namespace std;
 
 class RegexLoop {
@@ -36,20 +36,20 @@ public:
     repeat_upper = upper;
   }
 
-  // get substring - additional iterations for lower bounds greater than 1
-  StringPath get_substring();
+  // setters
+  void set_prefix(TestString p) { prefix = p; }
+  void set_substring_from_curr() { substring = curr_substring; }
+  void set_curr_prefix(TestString p) { curr_prefix = p; }
+  void set_curr_substring(TestString test_string);
 
-  // process minimum iterations string
-  void process_min_iter_string(StringPath *min_iter_string);
+  // getters
+  TestString get_substring();
 
-  // process begin loop edge
-  void process_begin_loop(StringPath prefix, bool processed);
-
-  // process end loop edge
-  void process_end_loop(StringPath prefix, bool processed);
+  // generate minimum iteration string
+  void gen_min_iter_string(TestString &min_iter_string);
 
   // generate evil strings
-  set <StringPath, spcompare> gen_evil_strings(StringPath path_string);
+  vector <TestString> gen_evil_strings(TestString test_string);
 
   // print the regex loop
   void print();
@@ -58,10 +58,12 @@ private:
 
   int repeat_lower;     	// lower bound for repeat quantifiers 
   int repeat_upper;     	// upper bound for repeat quantifiers (-1 if no bound)
-  StringPath path_prefix;           // path string up to visiting this node
-  StringPath path_substring;        // substring corresponding to this string
-  StringPath curr_prefix;           // current path string up to visiting this node
-  StringPath curr_substring;        // current substring corresponding to this string
+
+  TestString prefix;       	// prefix of test string before the loop
+  TestString substring;    	// substring corresponding to loop
+
+  TestString curr_prefix;       // current path string up to visiting this node
+  TestString curr_substring;    // current substring corresponding to this string
 };
 
 #endif // REGEX_LOOP_H

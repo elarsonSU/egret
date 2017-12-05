@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 #include "Edge.h"
-#include "StringPath.h"
+#include "TestString.h"
 using namespace std;
 
 class Path {
@@ -35,6 +35,9 @@ public:
 
   Path() {}
   Path(unsigned int initial) { states.push_back(initial); }
+  TestString get_test_string() { return test_string; }
+
+  // PATH CONSTRUCTION FUNCTIONS
 
   // adds an edge and the destination state to the path 
   void append(Edge *edge, unsigned int state);
@@ -45,11 +48,18 @@ public:
   // marks the states in the path as visited
   void mark_path_visited(bool *visited);
 
+  // TEST STRING GENERATION FUNCTIONS
+
   // generates the initial test string for the path
-  StringPath gen_initial_string(StringPath base_substring);
+  TestString gen_initial_string(TestString base_substring);
 
   // generates a string with minimum iterations for repeating constructs
-  StringPath gen_min_iter_string();
+  TestString gen_min_iter_string();
+
+  // generates evil strings for the path
+  vector <TestString> gen_evil_strings(const set <char> &punct_marks);
+
+  // CHECKER FUNCTIONS
 
   // returns true if path has a leading caret
   bool has_leading_caret();
@@ -57,15 +67,16 @@ public:
   // returns true if path has a trailing dollar
   bool has_trailing_dollar();
 
-  // returns an error message if there is an anchor (^ or $) in the
-  // middle of the path, returns an empty string otherwise
-  string check_anchor_middle();
+  // returns true and emits warning if there is an anchor (^ or $) in the
+  // middle of the path 
+  bool check_anchor_in_middle();
 
-  // generates evil strings for the path
-  set <StringPath, spcompare> gen_evil_strings(const set <char> &punct_marks);
+  // returns true and emits warning if a path contains duplicate character sets
+  bool check_charsets();
 
-  bool check_for_duplicate_character_sets();
-
+  // PRINT FUNCTION
+  
+  // prints the path
   void print();
 
 private:
@@ -73,8 +84,7 @@ private:
   vector <unsigned int> states;		// list of states
   vector <Edge *> edges;		// list of edges
   vector <unsigned int> evil_edges;	// list of evil edges that need processing
-  StringPath path_string;			// test string associated with path
-  
+  TestString test_string;		// test string associated with path
 };
 
 #endif // PATH_H

@@ -105,18 +105,25 @@ elif opts.regex != None:
 else:
     regexStr = input("Enter a Regular Expression: ")
 
-# execute regex-test
-#start_time = time.process_time()
-inputStrs = egret_ext.run(regexStr, opts.baseSubstring, opts.debugMode, opts.statMode)
-status = inputStrs[0]
-inputStrs = inputStrs[1:]
-hasError = (status[0:5] == "ERROR")
-hasWarning = (not hasError and status != "SUCCESS")
+# compile the regular expression
+try:
+    regex = re.compile(regexStr)
+
+    # execute regex-test
+    #start_time = time.process_time()
+    inputStrs = egret_ext.run(regexStr, opts.baseSubstring, opts.debugMode, opts.statMode)
+    status = inputStrs[0]
+    inputStrs = inputStrs[1:]
+    hasError = (status[0:5] == "ERROR")
+    hasWarning = (not hasError and status != "SUCCESS")
+
+except re.error as e:
+    status = "ERROR (compiler error): Regular expression did not compile: " + str(e)
+    hasError = True
 
 if not hasError:
 
   # test each string against the regex
-  regex = re.compile(regexStr)
   matches = []
   nonMatches = []
   for inputStr in inputStrs:

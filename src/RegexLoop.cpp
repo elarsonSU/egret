@@ -23,112 +23,93 @@
 #include <set>
 #include <string>
 #include "RegexLoop.h"
-#include "StringPath.h"
+#include "TestString.h"
 using namespace std;
 
-StringPath
+void
+RegexLoop::set_curr_substring(TestString test_string)
+{
+  curr_substring = test_string.create_substr(curr_prefix.size());
+}
+
+TestString
 RegexLoop::get_substring()
 {
-  // Adds the loop substring a sufficient number of times if the lower
-  // bound is greater than 1.
-  StringPath substring;
+  // The test string already contains one iteration from the elements in the loop.
+  // This function return additional iterations if the lower bound is greater than 1.
+  TestString extra;
   for (int j = 1; j < repeat_lower; j++) {
-    substring.add_path(curr_substring);
+    extra.append(curr_substring);
   }
 
-  return substring;
+  return extra;
 }
 
 void
-RegexLoop::process_min_iter_string(StringPath *min_iter_string)
+RegexLoop::gen_min_iter_string(TestString &min_iter_string)
 {
   if (repeat_lower != 0) {
-    min_iter_string->add_path(get_substring());
+    min_iter_string.append(get_substring());
   }
   else {
-    int max_keep = min_iter_string->path.size() - path_substring.path.size();
-    int num_to_remove = min_iter_string->path.size() - max_keep;
-    
-    for(int i = 0; i < num_to_remove; i++) {
-      if(!min_iter_string->path.empty()) {
-	min_iter_string->path.pop_back();
-      }
-    }
+    min_iter_string = curr_prefix;
   }
 }
 
-void
-RegexLoop::process_begin_loop(StringPath prefix, bool processed)
+vector <TestString>
+RegexLoop::gen_evil_strings(TestString test_string)
 {
-  curr_prefix.clear();
-  curr_prefix = prefix;
-  if (!processed) path_prefix = prefix;
-}
+  vector <TestString> evil_strings;
 
-void
-RegexLoop::process_end_loop(StringPath prefix, bool processed)
-{
-  curr_substring.clear();
-  vector <StringPath>::iterator path_iter;
+  // Create suffix: substring after the loop
+  int start = prefix.size() + substring.size();
+  TestString suffix = test_string.create_substr(start);
 
-  for (unsigned int i = curr_prefix.path.size(); i != prefix.path.size(); i++) {
-    curr_substring.path.push_back(prefix.path[i]);
-  }
-  if (!processed) path_substring = curr_substring;
-}
+  // Create string with one less iteration
+  TestString one_less_string = prefix;
+  one_less_string.append(suffix);
 
-set <StringPath, spcompare>
-RegexLoop::gen_evil_strings(StringPath path_string)
-{
-  set <StringPath, spcompare> evil_strings;
-  StringPath path_suffix;
-  int min = path_prefix.path.size() + path_substring.path.size();
-  int max = path_string.path.size();
-  for(int i = min; i < max; i++) {
-    path_suffix.path.push_back(path_string.path[i]);
-  }
-  StringPath one_less_string = path_prefix;
-  one_less_string.add_path(path_suffix);
-  StringPath one_more_string = path_prefix;
-  one_more_string.add_path(path_substring);
-  one_more_string.add_path(path_substring);
-  one_more_string.add_path(path_suffix);
+  // Create string with one more iteration
+  TestString one_more_string = prefix;
+  one_more_string.append(substring);
+  one_more_string.append(substring);
+  one_more_string.append(suffix);
 
   if (repeat_upper != -1) {
 
     // For cases like {n}, add strings for one less (n-1) and one more (n+1).
     if (repeat_lower == repeat_upper) {
-      evil_strings.insert(one_less_string);
-      evil_strings.insert(one_more_string);
+      evil_strings.push_back(one_less_string);
+      evil_strings.push_back(one_more_string);
     }
     else {
       // Handle one less on lower bound (note if lower bound is zero, the path
       // has one iteration so one less iteration will get us to zero iterations)
-      evil_strings.insert(one_less_string);
+      evil_strings.push_back(one_less_string);
 
       // Add enough path elements to get to the upper bound (note if lower bound
       // is zero, the path has one iteration so the starting point is bumped to one).
-      // The variable path_elements is initialized to path_substring since path_suffix
+      // The variable path_elements is initialized to substring since suffix
       // has one substring less than lower bound.
       int base_iterations = repeat_lower;
       if (base_iterations == 0) base_iterations = 1;
-      StringPath path_elements = path_substring;
+      TestString path_elements = substring;
       for (int i = base_iterations; i < repeat_upper; i++) {
-        path_elements.add_path(path_substring);
+        path_elements.append(substring);
       }
 
       // Add the upper bound string.
-      StringPath upper_bound_string = path_prefix;
-      upper_bound_string.add_path(path_elements);
-      upper_bound_string.add_path(path_suffix);
-      evil_strings.insert(upper_bound_string);
+      TestString upper_bound_string = prefix;
+      upper_bound_string.append(path_elements);
+      upper_bound_string.append(suffix);
+      evil_strings.push_back(upper_bound_string);
 
       // Add the string with one more iteration past the upper bound.
-      StringPath past_bound_string = path_prefix;
-      past_bound_string.add_path(path_elements);
-      past_bound_string.add_path(path_substring);
-      past_bound_string.add_path(path_suffix);
-      evil_strings.insert(past_bound_string);
+      TestString past_bound_string = prefix;
+      past_bound_string.append(path_elements);
+      past_bound_string.append(substring);
+      past_bound_string.append(suffix);
+      evil_strings.push_back(past_bound_string);
     } 
   }
 
@@ -136,12 +117,12 @@ RegexLoop::gen_evil_strings(StringPath path_string)
     // If lower bound is 0 or 1, add one less (zero) and add one more (two).  Want
     // to have one case that has repeated (two) elements.
     if (repeat_lower == 0 || repeat_lower == 1) {
-      evil_strings.insert(one_less_string);
-      evil_strings.insert(one_more_string);
+      evil_strings.push_back(one_less_string);
+      evil_strings.push_back(one_more_string);
     }
     // Otherwise, only add the string with one less iteration than the lower bound.
     else {
-      evil_strings.insert(one_less_string);
+      evil_strings.push_back(one_less_string);
     }
   }
 

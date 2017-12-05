@@ -27,7 +27,7 @@
 #include "CharSet.h"
 #include "RegexString.h"
 #include "RegexLoop.h"
-#include "StringPath.h"
+#include "TestString.h"
 using namespace std;
 
 typedef enum {
@@ -48,33 +48,34 @@ class Edge {
 
 public:
 
+  // constructors
   Edge() { processed = false; }
   Edge(EdgeType t) { type = t; processed = false; }
   Edge(EdgeType t, char c) { type = t; character = c; processed = false; }
   Edge(EdgeType t, CharSet *c) { type = t; char_set = c; processed = false; }
   Edge(EdgeType t, RegexString *r) { type = t; regex_str = r; processed = false; }
   Edge(EdgeType t, RegexLoop *r) { type = t; regex_loop = r; processed = false; }
-  Edge(EdgeType t, string _name, int _num, int _id) { type = t; name = _name; num = _num; id = _id;  processed = false; }
-  Edge(EdgeType t, string _name, int _num) { type = t; name = _name; num = _num;  processed = false; }
+  Edge(EdgeType t, string n, int g, int i) { type = t; group_name = n; group = g;
+    id = i;  processed = false; }
+  Edge(EdgeType t, string n, int g) { type = t; group_name = n; group = g;
+    processed = false; }
 
-  EdgeType getType() { return type; }
-
-  // get valid substring associated with edge
-  StringPath get_substring();
-
-  // process minimum iteration string
-  void process_min_iter_string(StringPath *min_iter_string);
+  // accessors
+  EdgeType get_type() 		{ return type; }
+  CharSet *get_charset()	{ return char_set; }
 
   // perform path processing on the edge, returns true if edge should be used in
   // creating evil strings
-  bool process_edge_in_path(StringPath path_prefix, StringPath base_substring);
+  bool process_edge(TestString path_prefix, TestString base_substring);
+
+  // get substring associated with edge
+  TestString get_substring();
+
+  // generate minimum iteration string
+  void gen_min_iter_string(TestString &min_iter_string);
 
   // generate evil strings
-  set <StringPath, spcompare> gen_evil_strings(StringPath path_string, const set <char> &punct_marks);
-
-  string get_charset_as_string();
-
-  bool is_charset_complemented();
+  vector <TestString> gen_evil_strings(TestString path_string, const set <char> &punct_marks);
 
   // print the edge
   void print();
@@ -86,9 +87,9 @@ private:
   CharSet *char_set;		// character set (for CHAR_SET_EDGE)
   RegexString *regex_str;	// regex string (for STRING_EDGE)
   RegexLoop *regex_loop;	// regex loop (for BEGIN_LOOP_EDGE and END_LOOP_EDGE)
-  string name;  // name (for BACKREFERENCE_EDGE, BEGIN_GROUP_EDGE, and END_GROUP_EDGE)
-  int num;      // number (for BACKREFERENCE_EDGE, BEGIN_GROUP_EDGE, and END_GROUP_EDGE)
-  int id;       // unique id for BACKREFERENCE_EDGE
+  string group_name;	// group name (for BACKREFERENCE_EDGE, BEGIN_GROUP_EDGE, and END_GROUP_EDGE)
+  int group;		// group number (for BACKREFERENCE_EDGE, BEGIN_GROUP_EDGE, and END_GROUP_EDGE)
+  int id;		// unique id (for BACKREFERENCE_EDGE)
 };
 
 #endif // EDGE_H

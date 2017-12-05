@@ -23,12 +23,14 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iostream>
 #include "Path.h"
 #include "Edge.h"
-#include <iostream>
-#include "StringPath.h"
-#include <unordered_set>
+#include "TestString.h"
+#include "error.h"
 using namespace std;
+
+// PATH CONSTRUCTION FUNCTIONS
 
 void
 Path::append(Edge *edge, unsigned int state)
@@ -53,39 +55,73 @@ Path::mark_path_visited(bool *visited)
   }
 }
 
-StringPath
-Path::gen_initial_string(StringPath base_substring)
+// TEST STRING GENERATION FUNCTIONS
+
+TestString
+Path::gen_initial_string(TestString base_substring)
 {
-  path_string.clear();
+  // Clear the string to start
+  test_string.clear();
+
   for (unsigned int i = 0; i < edges.size(); i++) {
-    bool process_edge = edges[i]->process_edge_in_path(path_string, base_substring);
-    if (process_edge) {
+    // An edge must be processed first before being added, the function returns
+    // whether the edge is evil and more tests should be added later.
+    bool evil_edge = edges[i]->process_edge(test_string, base_substring);
+    if (evil_edge) {
       evil_edges.push_back(i);
     }
-    path_string.add_path(edges[i]->get_substring());
+
+    // Add the substring to the initial string.
+    test_string.append(edges[i]->get_substring());
   }
-  return path_string;
+  return test_string;
 }
 
-StringPath
+TestString
 Path::gen_min_iter_string()
 {
-  StringPath min_iter_string;
+  TestString min_iter_string;
   for (unsigned int i = 0; i < edges.size(); i++) {
-    edges[i]->process_min_iter_string(&min_iter_string);
+    edges[i]->gen_min_iter_string(min_iter_string);
   }
   return min_iter_string;
 }
+
+vector <TestString>
+Path::gen_evil_strings(const set <char> &punct_marks)
+{
+  vector <TestString> evil_strings;
+
+  // add strings for interesting edges (char sets, strings, and loops)
+  for (unsigned int i = 0; i < evil_edges.size(); i++) {
+    int index = evil_edges[i];
+    vector <TestString> new_strings = edges[index]->gen_evil_strings(test_string, punct_marks);
+    vector <TestString>::iterator tsi;
+    for (tsi = new_strings.begin(); tsi != new_strings.end(); tsi++) {
+      evil_strings.push_back(*tsi);
+    }
+  }
+  return evil_strings;
+}
+
+// CHECKER FUNCTIONS
 
 bool
 Path::has_leading_caret()
 {
   for (unsigned int i = 0; i < edges.size(); i++) {
-    if (edges[i]->getType() == CARET_EDGE) {
-      return true;
-    }
-    else if (edges[i]->getType() != EPSILON_EDGE) {
-      return false;
+    switch (edges[i]->get_type()) {
+      case CARET_EDGE:
+	return true;
+      case BEGIN_LOOP_EDGE:
+      case END_LOOP_EDGE:
+      case EPSILON_EDGE:
+      case BACKREFERENCE_EDGE:
+      case BEGIN_GROUP_EDGE:
+      case END_GROUP_EDGE:
+	break; // Skip over
+      default:
+	return false;
     }
   }
   return false;
@@ -95,139 +131,96 @@ bool
 Path::has_trailing_dollar()
 {
   for (unsigned int i = edges.size() - 1; i > 0; i--) {
-    if (edges[i]->getType() == DOLLAR_EDGE) {
-      return true;
-    }
-    else if (edges[i]->getType() != EPSILON_EDGE) {
-      return false;
+    switch (edges[i]->get_type()) {
+      case DOLLAR_EDGE:
+	return true;
+      case BEGIN_LOOP_EDGE:
+      case END_LOOP_EDGE:
+      case EPSILON_EDGE:
+      case BACKREFERENCE_EDGE:
+      case BEGIN_GROUP_EDGE:
+      case END_GROUP_EDGE:
+	break; // Skip over
+      default:
+	return false;
     }
   }
   return false;
 }
 
-string
-Path::check_anchor_middle()
+bool
+Path::check_anchor_in_middle()
 {
   bool seen_non_caret = false;
   bool seen_dollar = false; 
-  bool caret_in_middle = false;
-  bool dollar_in_middle = false;
-  unsigned int caret_index;
-  unsigned int dollar_index;
 
-  // traverse the path
   for (unsigned int i = 0; i < edges.size(); i++) {
-    switch (edges[i]->getType()) {
+    switch (edges[i]->get_type()) {
       case CARET_EDGE:
-	if (seen_non_caret && !caret_in_middle) {
-	  caret_in_middle = true;
-	  caret_index = i;
+	if (seen_non_caret) {
+	  addWarning("WARNING (anchor middle): Generated string has ^ anchor in middle: " +
+	    test_string.get_string());
+	  return true;
 	}
 	break;
       case DOLLAR_EDGE:
-	if (!dollar_in_middle) {
-	  seen_dollar = true;
-	  dollar_index = i;
-	}
+	seen_dollar = true;
 	break;
       case BEGIN_LOOP_EDGE:
       case END_LOOP_EDGE:
       case EPSILON_EDGE:
       case BACKREFERENCE_EDGE:
+      case BEGIN_GROUP_EDGE:
+      case END_GROUP_EDGE:
 	break;
-      default:	// everything else (not epsilon or anchor)
+      default:
 	seen_non_caret = true;
-	if (seen_dollar) dollar_in_middle = true;
+	if (seen_dollar) {
+          addWarning("WARNING (anchor middle): Generated string has $ anchor in middle: " +
+	    test_string.get_string());
+	  return true;
+	}
     }
   }
 
-  // return if no violations
-  if (!caret_in_middle && !dollar_in_middle) return "";
-
-  // todo - future work
-  // The before and after substrings, used for printing error messages, led to incorrect memory accesses. Commented out until a fix can be found
-  // create before and after substring
-  /*
-  unsigned int split_index = caret_in_middle ? caret_index : dollar_index;
-  StringPath before;
-  for (unsigned int i = 0; i < split_index; i++) {
-    before.add_path(edges[i]->get_substring());
-  }
-  StringPath after;
-  for (unsigned int i = split_index + 1; i < edges.size(); i++) {
-    after.add_path(edges[i]->get_substring());
-  }
-  */
- 
-  // generate error message
-  if (caret_in_middle) {
-    stringstream s;
-    s << "Generated string has ^ anchor in middle\n";
-    //s << "...Characters before ^ anchor: " << before.get_string() << "\n";
-    //s << "...Characters after ^ anchor:  " << after.get_string();
-    return s.str();
-  }
-  else {
-    stringstream s;
-    s << "Generated string has $ anchor in middle\n";
-    //s << "...Characters before $ anchor: " << before.get_string() << "\n";
-    //s << "...Characters after $ anchor:  " << after.get_string();
-    return s.str();
-  }
-}
-
-set <StringPath, spcompare>
-Path::gen_evil_strings(const set <char> &punct_marks)
-{
-  set <StringPath, spcompare> evil_strings;
-
-  // add string where each repeat quantifier is zero (if allowed)
-  evil_strings.insert(gen_min_iter_string());
-  // add strings for interesting edges (char sets, strings, and loops)
-  for (unsigned int i = 0; i < evil_edges.size(); i++) {
-    int index = evil_edges[i];
-    set <StringPath, spcompare> new_strings = edges[index]->gen_evil_strings(path_string, punct_marks);
-    set <StringPath, spcompare>::iterator si;
-    for(si = new_strings.begin(); si != new_strings.end(); si++) {
-      StringPath s = *si;
-      evil_strings.insert(s);
-    }
-  }
-  return evil_strings;
+  return false;
 }
 
 bool
-Path::check_for_duplicate_character_sets()
+Path::check_charsets()
 {
-  bool found_duplicate = false;
-  std::unordered_set<string> charsets = {};
-  string empty_string = "";
+  set <string> charsets; // keeps track of charsets, looking for duplicates
   
   for (unsigned int i = 0; i < edges.size(); i++) {
-    if (edges[i]->getType() == CHAR_SET_EDGE) {
-      string s = edges[i]->get_charset_as_string();
-      bool is_complement = edges[i]->is_charset_complemented();
-      if ((s != empty_string) && (s.length() > 1) && (!is_complement)) {
-	if (charsets.empty()) {
-	  charsets.insert(s);
-	}
-        else {
-          std::unordered_set<string>::const_iterator in = charsets.find(s);
-          if (in == charsets.end()) {
-	    // not a duplicate
-	    charsets.insert(s);
+
+    if (edges[i]->get_type() == CHAR_SET_EDGE) {
+      CharSet *charset_ptr = edges[i]->get_charset();
+
+      // check the character set
+      charset_ptr->check();
+
+      // look for duplicate charsets, only consider charsets that have only characters and are
+      // not complemented
+      if (charset_ptr->only_has_characters() && !charset_ptr->is_complement()) {
+	string charset_str = charset_ptr->get_charset_as_string();
+        if (charset_str.length() > 1) {
+          if (charsets.find(charset_str) == charsets.end()) {
+	    // not a duplicate - add to list
+	    charsets.insert(charset_str);
           }
           else {
-	    // is a duplicate
-	    found_duplicate = true;
+	    addWarning("WARNING (duplicate charset): Found duplicate character set [" + charset_str + "]");
+	    return true;
           }
-        }
+	}
       }
     }
   }
 
-  return found_duplicate;
+  return false;
 }
+
+// PRINT FUNCTION
 
 void
 Path::print()

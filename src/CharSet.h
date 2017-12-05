@@ -25,7 +25,7 @@
 #include <set>
 #include <string>
 #include <vector>
-#include "StringPath.h"
+#include "TestString.h"
 using namespace std;
 
 typedef enum
@@ -47,54 +47,69 @@ class CharSet {
 
 public:
 
-  CharSet() { complement = false; }
+  CharSet() { complement = false; checked = false; }
 
-  void set_path_prefix(StringPath p) { path_prefix = p; }
+  // setters
+  void set_prefix(TestString p) { prefix = p; }
   void set_complement(bool c) { complement = c; }
+
+  // getters
   bool is_complement() { return complement; }
+
+  // CONSTRUCTION FUNCTIONS
 
   // add an item to the character set
   void add_item(CharSetItem item);
 
-  // determines if character set is a string candidate
+  // PROPERTY FUNCTIONS
+
+  // returns true if character set is a string candidate
   bool is_string_candidate();
+
+  // returns true if character set allows punctuation
+  bool allows_punctuation();
+
+  // returns true if character set only has characters
+  bool only_has_characters();
+
+  // returns the character set as a sorted string
+  string get_charset_as_string();
+
+  // TEST GENERATION FUNCTIONS
 
   // gets a single valid character
   char get_valid_character();
 
   // generate evil strings
-  set <StringPath, spcompare> gen_evil_strings(StringPath path_string, const set <char> &punct_marks);
+  vector <TestString> gen_evil_strings(TestString test_string, const set <char> &punct_marks);
 
-  // returns true if character set allows punctuation
-  bool allows_punctuation();
+  // CHECKER FUNCTION
 
-  void check_invalid_punctuation();
+  // checks the character set, emits warnings if necessary
+  void check();
 
-  void check_single_punctuation();
-
-  void check_only_digits_and_punctuation();
-
-  string get_charset_as_string();
-
-  bool only_has_characters();
-
-  bool is_charset_complemented();
+  // PRINT FUNCTION
 
   // print the character set
   void print();
+
 
 private:
 
   vector <CharSetItem> items;	// set of items comprising the set
   bool complement;		// true if set is complemented
-  StringPath path_prefix;		// path string up to visiting this node
-  string substring;		// substring corresponding to this char set
+  TestString prefix;		// path string up to visiting this node
+  bool checked;			// true of charset has been checked
 
   // determines if a character is valid in a complemented character set
   bool is_valid_character(char character);
 
   // creates a set of test characters
   set <char> create_test_chars(const set <char> &punct_marks);
+
+  // checker functions
+  void check_single_punctuation();
+  void check_only_digits_and_punctuation();
 };
 
 #endif // CHARSET_H

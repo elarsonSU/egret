@@ -24,8 +24,9 @@
 
 #include <set>
 #include <string>
+#include <vector>
 #include "CharSet.h"
-#include "StringPath.h"
+#include "TestString.h"
 using namespace std;
 
 class RegexString {
@@ -38,15 +39,18 @@ public:
     repeat_upper = upper;
   }
 
-  void set_path_prefix(StringPath p) { path_prefix = p; }
-  void set_substring(StringPath s) { substring = s; }
-  StringPath get_substring() { return substring; }
+  // setters
+  void set_prefix(TestString p) { prefix = p; }
+  void set_substring(TestString s) { substring = s; }
 
-  // process minimum iterations string
-  void process_min_iter_string(StringPath *min_iter_string);
+  // getters
+  TestString get_substring() { return substring; }
+
+  // generate minimum iterations string
+  void gen_min_iter_string(TestString &min_iter_string);
 
   // generate evil strings
-  set <StringPath, spcompare> gen_evil_strings(StringPath path_string, const set <char> &punct_marks);
+  vector <TestString> gen_evil_strings(TestString test_string, const set <char> &punct_marks);
 
   // print the regex string
   void print();
@@ -55,8 +59,14 @@ private:
   CharSet *char_set;		// corresponding character set
   int repeat_lower;     	// lower bound for string
   int repeat_upper;     	// upper bound for string
-  StringPath path_prefix;           // path string up to visiting this node
-  StringPath substring;             // substring corresponding to this string
+
+  TestString prefix;            // prefix of test string before the loop
+  TestString substring;         // substring corresponding to this string
+
+  // add evil substrings to the set 
+  void add_evil_substring(vector <TestString> &evil_substrings, string s);
+  void add_evil_substring(vector <TestString> &evil_substrings,
+    TestString before, string s, TestString after);
 };
 
 #endif // REGEX_STRING_H

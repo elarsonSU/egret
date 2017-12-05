@@ -30,16 +30,19 @@
 #include <vector>
 #include "NFA.h"
 #include "Path.h"
-#include "StringPath.h"
+#include "TestString.h"
 using namespace std;
 
 class TestGenerator {
 
 public:
 
-  TestGenerator(NFA n, string b, set <char> p) { nfa = n; 
-base_substring.add_string(b); 
-punct_marks = p;}
+  TestGenerator(NFA n, string b, set <char> p, bool d) {
+    paths = n.find_basis_paths(); 
+    base_substring.append(b); 
+    punct_marks = p;
+    debug_mode = d;
+  }
 
   // generate test strings
   vector <string> gen_test_strings();
@@ -49,23 +52,48 @@ punct_marks = p;}
 
 private:
 
-  NFA nfa;				// NFA to traverse
-  StringPath base_substring;    // base string for regex strings
-  set <char> punct_marks;		// set of punct marks
-  vector <Path> paths;			// list of paths
-  vector <StringPath> test_strings;     // list of test strings
+  vector <Path> paths;		// list of paths
+  TestString base_substring;    // base string for regex strings
+  set <char> punct_marks;	// set of punct marks
+  bool debug_mode;		// set if debug mode is on
+
+  vector <TestString> test_strings;     // list of test strings
+
+  int num_gen_strings;          // number of generated strings (for stats)
+
+  // TEST STRING GENERATION FUNCTIONS
 
   // generates initial set of strings
   void gen_initial_strings();
 
+  // generate backreference strings
+  vector <string> gen_evil_backreference_strings();
+
+  // generate minimum iteration strings
+  void gen_min_iter_strings();
+
+  // generates evil strings
+  void gen_evil_strings();
+
   // adds a string to test string vector (unless it is already there)
-  void add_to_test_strings(StringPath s);
+  void add_to_test_strings(TestString s);
 
   // adds a set of strings to test string vector
-  void add_to_test_strings(set <StringPath, spcompare> strs);
+  void add_to_test_strings(vector <TestString> strs);
 
-  // generates additional evil strings
-  void gen_evil_strings();
+  // add a string to return strings (unless it is already there)
+  void add_to_return_strings(vector <string> &return_strs, string s);
+
+  // CHECKER FUNCTIONS
+
+  // check anchor usage
+  void check_anchor_usage();
+
+  // check anchor in middle
+  void check_anchor_in_middle();
+
+  // check chararacter sets
+  void check_charsets();
 };
 
 #endif // TEST_GENERATOR_H

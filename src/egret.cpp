@@ -51,11 +51,11 @@ run_engine(string regex, string base_substring, bool debug = false, bool stat = 
 
     // check base_substring
     if (base_substring.length() < 2) {
-      throw EgretException("ERROR: Base substring must have at least two letters");
+      throw EgretException("ERROR (bad arguments): Base substring must have at least two letters");
     }
     for (unsigned int i = 0; i < base_substring.length(); i++) {
       if (!isalpha(base_substring[i])) {
-        throw EgretException("ERROR: Base substring can only contain letters");
+        throw EgretException("ERROR (bad arguments): Base substring can only contain letters");
       }
     }
 
@@ -71,10 +71,6 @@ run_engine(string regex, string base_substring, bool debug = false, bool stat = 
     NFA nfa;
     nfa.build(tree);
 
-    // generate tests
-    TestGenerator gen(nfa, base_substring, tree.get_punct_marks());
-    test_strings = gen.gen_test_strings();
-    
     // print debug info
     if (debug_mode) {
       cout << "RegEx: " << regex << endl;
@@ -83,6 +79,10 @@ run_engine(string regex, string base_substring, bool debug = false, bool stat = 
       nfa.print();
     }
 
+    // generate tests
+    TestGenerator gen(nfa, base_substring, tree.get_punct_marks(), debug_mode);
+    test_strings = gen.gen_test_strings();
+    
     // print stats
     Stats stats;
     if (stat_mode) {

@@ -225,7 +225,8 @@ private:
     int alternation_nodes;
     int concat_nodes;
     int repeat_nodes;
-    int group_nodes;
+    int unnamed_group_nodes;
+    int named_group_nodes;
     int backreference_nodes;
     int character_nodes;
     int caret_nodes;
