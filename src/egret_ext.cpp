@@ -32,13 +32,16 @@ egret_run(PyObject *self, PyObject *args)
 {
   const char *regex;
   const char *base_substring;
+  int check_only;
   int debug_mode;
   int stat_mode;
 
-  if (!PyArg_ParseTuple(args, "sspp", &regex, &base_substring, &debug_mode, &stat_mode))
+  if (!PyArg_ParseTuple(args, "ssppp", &regex, &base_substring,
+        &check_only, &debug_mode, &stat_mode))
     return NULL;
 
-  vector <string> tests = run_engine(regex, base_substring, debug_mode, stat_mode);
+  vector <string> tests =
+    run_engine(regex, base_substring, check_only, debug_mode, stat_mode);
 
   PyObject *list = PyList_New(0);
   vector <string>::iterator it;

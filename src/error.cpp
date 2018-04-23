@@ -1,4 +1,4 @@
-/*  error.cpp: Error and warning processing
+/*  error.cpp: Error processing
 
     Copyright (C) 2016  Eric Larson and Anna Kirk
     elarson@seattleu.edu
@@ -23,23 +23,32 @@
 #include "error.h"
 using namespace std;
 
-static string warnings = "";
+static string alerts = "";
 
 void
-clearWarnings()
+clearAlerts()
 {
-  warnings = "";
+  alerts = "";
 }
 
 void
-addWarning(string message)
+addWarning(string type, string message)
 {
-  warnings += message;
-  warnings += "\n";
+  string warning = "WARNING (" + type + "): " + message;
+  alerts += warning;
+  alerts += "\n";
+}
+
+void
+addViolation(string type, string message)
+{
+  string violation = "VIOLATION (" + type + "): " + message;
+  alerts += violation;
+  alerts += "\n";
 }
 
 string
-getWarnings()
+getAlerts()
 {
-  return warnings;
+  return alerts;
 }

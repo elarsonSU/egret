@@ -55,10 +55,10 @@ Path::mark_path_visited(bool *visited)
   }
 }
 
-// TEST STRING GENERATION FUNCTIONS
+// PATH PROCESSING FUNCTION
 
-TestString
-Path::gen_initial_string(TestString base_substring)
+void
+Path::process_path(TestString base_substring)
 {
   // Clear the string to start
   test_string.clear();
@@ -74,34 +74,6 @@ Path::gen_initial_string(TestString base_substring)
     // Add the substring to the initial string.
     test_string.append(edges[i]->get_substring());
   }
-  return test_string;
-}
-
-TestString
-Path::gen_min_iter_string()
-{
-  TestString min_iter_string;
-  for (unsigned int i = 0; i < edges.size(); i++) {
-    edges[i]->gen_min_iter_string(min_iter_string);
-  }
-  return min_iter_string;
-}
-
-vector <TestString>
-Path::gen_evil_strings(const set <char> &punct_marks)
-{
-  vector <TestString> evil_strings;
-
-  // add strings for interesting edges (char sets, strings, and loops)
-  for (unsigned int i = 0; i < evil_edges.size(); i++) {
-    int index = evil_edges[i];
-    vector <TestString> new_strings = edges[index]->gen_evil_strings(test_string, punct_marks);
-    vector <TestString>::iterator tsi;
-    for (tsi = new_strings.begin(); tsi != new_strings.end(); tsi++) {
-      evil_strings.push_back(*tsi);
-    }
-  }
-  return evil_strings;
 }
 
 // CHECKER FUNCTIONS
@@ -158,7 +130,7 @@ Path::check_anchor_in_middle()
     switch (edges[i]->get_type()) {
       case CARET_EDGE:
 	if (seen_non_caret) {
-	  addWarning("WARNING (anchor middle): Generated string has ^ anchor in middle: " +
+	  addViolation("anchor middle", "Generated string has ^ anchor in middle: " +
 	    test_string.get_string());
 	  return true;
 	}
@@ -176,7 +148,7 @@ Path::check_anchor_in_middle()
       default:
 	seen_non_caret = true;
 	if (seen_dollar) {
-          addWarning("WARNING (anchor middle): Generated string has $ anchor in middle: " +
+          addViolation("anchor middle", "Generated string has $ anchor in middle: " +
 	    test_string.get_string());
 	  return true;
 	}
@@ -209,7 +181,7 @@ Path::check_charsets()
 	    charsets.insert(charset_str);
           }
           else {
-	    addWarning("WARNING (duplicate charset): Found duplicate character set [" + charset_str + "]");
+	    addViolation("duplicate charset", "Found duplicate character set [" + charset_str + "]");
 	    return true;
           }
 	}
@@ -218,6 +190,35 @@ Path::check_charsets()
   }
 
   return false;
+}
+
+// TEST STRING GENERATION FUNCTIONS
+
+TestString
+Path::gen_min_iter_string()
+{
+  TestString min_iter_string;
+  for (unsigned int i = 0; i < edges.size(); i++) {
+    edges[i]->gen_min_iter_string(min_iter_string);
+  }
+  return min_iter_string;
+}
+
+vector <TestString>
+Path::gen_evil_strings(const set <char> &punct_marks)
+{
+  vector <TestString> evil_strings;
+
+  // add strings for interesting edges (char sets, strings, and loops)
+  for (unsigned int i = 0; i < evil_edges.size(); i++) {
+    int index = evil_edges[i];
+    vector <TestString> new_strings = edges[index]->gen_evil_strings(test_string, punct_marks);
+    vector <TestString>::iterator tsi;
+    for (tsi = new_strings.begin(); tsi != new_strings.end(); tsi++) {
+      evil_strings.push_back(*tsi);
+    }
+  }
+  return evil_strings;
 }
 
 // PRINT FUNCTION

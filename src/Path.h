@@ -48,16 +48,8 @@ public:
   // marks the states in the path as visited
   void mark_path_visited(bool *visited);
 
-  // TEST STRING GENERATION FUNCTIONS
-
-  // generates the initial test string for the path
-  TestString gen_initial_string(TestString base_substring);
-
-  // generates a string with minimum iterations for repeating constructs
-  TestString gen_min_iter_string();
-
-  // generates evil strings for the path
-  vector <TestString> gen_evil_strings(const set <char> &punct_marks);
+  // processes path: sets test string and evil edges
+  void process_path(TestString base_substring); 
 
   // CHECKER FUNCTIONS
 
@@ -74,6 +66,14 @@ public:
   // returns true and emits warning if a path contains duplicate character sets
   bool check_charsets();
 
+  // TEST STRING GENERATION FUNCTIONS
+
+  // generates a string with minimum iterations for repeating constructs
+  TestString gen_min_iter_string();
+
+  // generates evil strings for the path
+  vector <TestString> gen_evil_strings(const set <char> &punct_marks);
+
   // PRINT FUNCTION
   
   // prints the path
@@ -83,8 +83,8 @@ private:
 
   vector <unsigned int> states;		// list of states
   vector <Edge *> edges;		// list of edges
-  vector <unsigned int> evil_edges;	// list of evil edges that need processing
   TestString test_string;		// test string associated with path
+  vector <unsigned int> evil_edges;	// list of evil edges that need processing
 };
 
 #endif // PATH_H

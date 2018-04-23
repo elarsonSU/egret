@@ -73,13 +73,13 @@ Scanner::init(string in)
 	  }
 	  else {
 	    token.type = WORD_BOUNDARY;
-	    addWarning("WARNING (ignored): Regex contains ignored element \\b");
+	    addWarning("ignored", "Regex contains ignored element \\b");
 	  }
 	  break;
 	// \B is also treated as word boundary
 	case 'B':
 	  token.type = WORD_BOUNDARY;
-	  addWarning("WARNING (ignored): Regex contains ignored element \\B");
+	  addWarning("ignored", "Regex contains ignored element \\B");
 	  break;
 	// Escaped characters are unsupported
         case 'a':
@@ -517,8 +517,8 @@ Scanner::process_extension(string in, unsigned int &idx)
   case '!':
   {
     stringstream s;
-    s << "WARNING (ignored): Regex contains ignored extension ?" << ext;
-    addWarning(s.str());
+    s << "Regex contains ignored extension ?" << ext;
+    addWarning("ignored", s.str());
     token.type = IGNORED_EXT;
     break;
   }
@@ -528,8 +528,8 @@ Scanner::process_extension(string in, unsigned int &idx)
     char c = get_next_char(in, idx);
     if (c == '=' || c == '!') {
       stringstream s;
-      s << "WARNING (ignored): Regex contains ignored extension ?<" << c;
-      addWarning(s.str());
+      s << "Regex contains ignored extension ?<" << c;
+      addWarning("ignored", s.str());
       token.type = IGNORED_EXT;
     }
     else {
@@ -793,7 +793,7 @@ Scanner::is_char_range()
       tokens[index+2].type == CHARACTER) {
     if (tokens[index].character > tokens[index+2].character) {
       stringstream s;
-      s << "ERROR (bad range): Improperly formed range "
+      s << "VIOLATION (bad range): Improperly formed range "
         << tokens[index].character << "-"
 	<< tokens[index+2].character << endl;
       throw EgretException(s.str());
@@ -802,15 +802,15 @@ Scanner::is_char_range()
   }
   else if (tokens[index].type == CHARACTER &&
       tokens[index+2].type == CHAR_CLASS) {
-    throw EgretException("ERROR (bad range): Improperly constructed range using char class");
+    throw EgretException("VIOLATION (bad range): Improperly constructed range using char class");
   }
   else if (tokens[index].type == CHAR_CLASS &&
       tokens[index+2].type == CHARACTER) {
-    throw EgretException("ERROR (bad range): Improperly constructed range using char class");
+    throw EgretException("VIOLATION (bad range): Improperly constructed range using char class");
   }
   else if (tokens[index].type == CHAR_CLASS &&
       tokens[index+2].type == CHAR_CLASS) {
-    throw EgretException("ERROR (bad range): Improperly constructed range using char class");
+    throw EgretException("VIOLATION (bad range): Improperly constructed range using char class");
   }
   return false;
 }

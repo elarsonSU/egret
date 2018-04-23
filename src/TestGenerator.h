@@ -28,7 +28,6 @@
 #include <set>
 #include <string>
 #include <vector>
-#include "NFA.h"
 #include "Path.h"
 #include "TestString.h"
 using namespace std;
@@ -37,10 +36,10 @@ class TestGenerator {
 
 public:
 
-  TestGenerator(NFA n, string b, set <char> p, bool d) {
-    paths = n.find_basis_paths(); 
-    base_substring.append(b); 
-    punct_marks = p;
+  TestGenerator(vector <Path> p, TestString b, set <char> m, bool d) {
+    paths = p;
+    base_substring = b;
+    punct_marks = m;
     debug_mode = d;
   }
 
@@ -63,8 +62,8 @@ private:
 
   // TEST STRING GENERATION FUNCTIONS
 
-  // generates initial set of strings
-  void gen_initial_strings();
+  // get initial set of strings
+  void get_initial_strings();
 
   // generate backreference strings
   vector <string> gen_evil_backreference_strings();
@@ -83,17 +82,5 @@ private:
 
   // add a string to return strings (unless it is already there)
   void add_to_return_strings(vector <string> &return_strs, string s);
-
-  // CHECKER FUNCTIONS
-
-  // check anchor usage
-  void check_anchor_usage();
-
-  // check anchor in middle
-  void check_anchor_in_middle();
-
-  // check chararacter sets
-  void check_charsets();
 };
-
 #endif // TEST_GENERATOR_H

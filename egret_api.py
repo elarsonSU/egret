@@ -28,7 +28,7 @@ def run_egret(regexStr, baseSubstring, testList):
         status = "ERROR (compiler error): Regular expression did not compile: " + e.msg
         return ([], [], status, [])
         
-    inputStrs = egret_ext.run(regexStr, baseSubstring, False, False)
+    inputStrs = egret_ext.run(regexStr, baseSubstring, False, False, False)
     status = inputStrs[0]
     if status[0:5] == "ERROR":
         return ([], [], status, [])

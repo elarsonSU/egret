@@ -113,7 +113,8 @@ private:
   bool is_regex_string(ParseNode *node, int repeat_lower, int repeat_upper);
 
   // utility function to find all paths through the NFA
-  void traverse(unsigned int curr_state, Path path, vector <Path> &paths, bool *visited);
+  void traverse(unsigned int curr_state, Path path, vector <Path> &paths,
+      bool *visited);
 };
 
 #endif // NFA_H

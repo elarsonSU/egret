@@ -527,12 +527,12 @@ CharSet::create_test_chars(const set<char> &punct_marks)
   // Print warning for duplicates if necessary
   if (!duplicates.empty()) {
     stringstream s;
-    s << "WARNING (duplicate char in charset): Duplicate characters in character set:";
+    s << "Duplicate characters in character set:";
     set <char>::iterator si;
     for (si = duplicates.begin(); si != duplicates.end(); si++) {
       s << " " << *si;
     }
-    addWarning(s.str());
+    addViolation("duplicate char in charset", s.str());
   }
 
   return test_chars;
@@ -596,8 +596,8 @@ CharSet::check_only_digits_and_punctuation()
 
   if (found_digit && found_punctuation && !found_other) {
     stringstream s;
-    s << "WARNING (digit/punc charset): Character set contains only digits and punctuation marks";
-    addWarning(s.str());
+    s << "Character set contains only digits and punctuation marks";
+    addViolation("digit/punc charset", s.str());
   }
 }
 
@@ -640,9 +640,9 @@ CharSet::check_single_punctuation()
 
   if (found_punctuation && !found_another_punctuation && !ignore && other_chars) {
     stringstream s;
-    s << "WARNING (one punc charset): Only punctuation mark inside a character set is: "
+    s << "Only punctuation mark inside a character set is: "
       << string(1, punctuation_mark);
-    addWarning(s.str());
+    addViolation("one punc charset", s.str());
   }
 }
 

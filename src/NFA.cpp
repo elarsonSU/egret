@@ -394,7 +394,8 @@ NFA::find_basis_paths()
 }
 
 void
-NFA::traverse(unsigned int curr_state, Path path, vector <Path> &paths, bool *visited)
+NFA::traverse(unsigned int curr_state, Path path, vector <Path> &paths,
+    bool *visited)
 {
   // stop if you already have been here
   bool been_here = visited[curr_state];

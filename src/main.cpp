@@ -36,6 +36,7 @@ main(int argc, char *argv[])
   int idx = 1;
   string regex = "";
   string base_substring = "evil";
+  bool check_only = false;
   bool debug_mode = false;
   bool stat_mode = false;
 
@@ -78,6 +79,11 @@ main(int argc, char *argv[])
       base_substring = get_arg(idx, argc, argv);
     }
 
+    // -c: only run checker
+    else if (strcmp(arg, "-c") == 0) {
+      check_only = true;
+    }
+
     // -d: print debug information based on the given mode 
     else if (strcmp(arg, "-d") == 0) {
       debug_mode = true;
@@ -100,7 +106,9 @@ main(int argc, char *argv[])
     return -1;
   }
 
-  vector <string> test_strings = run_engine(regex, base_substring, debug_mode, stat_mode);
+  vector <string> test_strings =
+    run_engine(regex, base_substring, check_only, debug_mode, stat_mode);
+
   vector <string>::iterator it;
   for (it = test_strings.begin(); it != test_strings.end(); it++) {
     cout << *it << endl;

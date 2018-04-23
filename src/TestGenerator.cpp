@@ -42,9 +42,10 @@ TestGenerator::gen_test_strings()
 {
   vector <TestString>::iterator tsi;
 
-  // gen initial strings
-  gen_initial_strings();
+  // get initial strings
+  get_initial_strings();
 
+  // TODO: Move to egret.cpp after path processing?
   // debug - print initial strings from basis paths
   if (debug_mode) {
     cout << "Initial Test Strings: " << endl;
@@ -52,11 +53,6 @@ TestGenerator::gen_test_strings()
       cout << tsi->get_string() << endl;
     }
   }
-
-  // perform various checks
-  check_anchor_usage();
-  check_anchor_in_middle();
-  check_charsets();
 
   // generate backreference strings
   vector <string> backref_strs = gen_evil_backreference_strings();
@@ -87,13 +83,11 @@ TestGenerator::gen_test_strings()
 }
 
 void
-TestGenerator::gen_initial_strings()
+TestGenerator::get_initial_strings()
 {
   vector <Path>::iterator path_iter;
   for (path_iter = paths.begin(); path_iter != paths.end(); path_iter++) {
-    TestString test_string;
-    test_string.append(path_iter->gen_initial_string(base_substring));
-    add_to_test_strings(test_string);
+    add_to_test_strings(path_iter->get_test_string());
   }
 }
 
@@ -164,104 +158,12 @@ TestGenerator::add_to_return_strings(vector <string> &return_strs, string s)
     return_strs.insert(return_strs.begin(), s);
 }
 
-// CHECKER FUNCTIONS
-
-void
-TestGenerator::check_anchor_usage()
-{
-  bool all_start_with_caret = false;
-  bool all_end_with_dollar = false;
-  bool warn_caret_start = false;
-  bool warn_dollar_end = false;
-  
-  bool is_first_string = true;
-  string first_string;
-  vector <Path>::iterator path_iter;
-  for (path_iter = paths.begin(); path_iter != paths.end(); path_iter++) {
-
-    // check for leading carets and trailing dollars
-    bool start_with_caret = path_iter->has_leading_caret();
-    bool end_with_dollar = path_iter->has_trailing_dollar();
-
-    // for first path, record whether the path starts with ^ and/or ends with $
-    if (is_first_string) {
-      all_start_with_caret = start_with_caret;
-      all_end_with_dollar = end_with_dollar;
-      is_first_string = false;
-      first_string = path_iter->get_test_string().get_string();
-    }
-
-    // print warning (but only for first occurrence of each anchor)
-    if (!warn_caret_start) {
-      if (all_start_with_caret && !start_with_caret) {
-	string curr_string = path_iter->get_test_string().get_string();
-
-        stringstream s;
-        s << "WARNING (anchor usage): Some but not all strings start with a ^ anchor\n";
-        s << "...String with ^ anchor:    " << first_string << "\n";
-        s << "...String with no ^ anchor: " << curr_string;
-        addWarning(s.str());
-        warn_caret_start = true;
-      }
-      if (!all_start_with_caret && start_with_caret) {
-	string curr_string = path_iter->get_test_string().get_string();
-
-        stringstream s;
-        s << "WARNING (anchor usage): Some but not all strings start with a ^ anchor\n";
-        s << "...String with ^ anchor:    " << curr_string << "\n";
-        s << "...String with no ^ anchor: " << first_string;
-        addWarning(s.str());
-        warn_caret_start = true;
-      }
-    }
-    if (!warn_dollar_end) {
-      if (all_end_with_dollar && !end_with_dollar) {
-	string curr_string = path_iter->get_test_string().get_string();
-
-        stringstream s;
-        s << "WARNING (anchor usage): Some but not all strings end with a $ anchor\n";
-        s << "...String with $ anchor:    " << first_string << "\n";
-        s << "...String with no $ anchor: " << curr_string;
-        addWarning(s.str());
-        warn_dollar_end = true;
-      }
-      if (!all_end_with_dollar && end_with_dollar) {
-	string curr_string = path_iter->get_test_string().get_string();
-
-        stringstream s;
-        s << "WARNING (anchor usage): Some but not all strings end with a $ anchor\n";
-        s << "...String with $ anchor:    " << curr_string << "\n";
-        s << "...String with no $ anchor: " << first_string;
-        addWarning(s.str());
-        warn_dollar_end = true;
-      }
-    }
-  }
-}
-
-void
-TestGenerator::check_anchor_in_middle()
-{
-  vector <Path>::iterator path_iter;
-  for (path_iter = paths.begin(); path_iter != paths.end(); path_iter++) {
-    if (path_iter->check_anchor_in_middle()) return;
-  }
-}
-
-void
-TestGenerator::check_charsets()
-{
-  vector <Path>::iterator path_iter;
-  for (path_iter = paths.begin(); path_iter != paths.end(); path_iter++) {
-    if (path_iter->check_charsets()) return;
-  }
-}
-
 // STAT FUNCTION
 
 void
 TestGenerator::add_stats(Stats &stats)
 {
+  // TODO: Should paths be included here?
   stats.add("PATHS", "Paths", paths.size());
   stats.add("PATHS", "Strings", num_gen_strings);
 }

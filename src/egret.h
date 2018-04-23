@@ -28,6 +28,7 @@ using namespace std;
 
 // run_engine: entry point into EGRET engine
 vector <string>
-run_engine(string regex, string base_substring, bool debug = false, bool stat = false);
+run_engine(string regex, string base_substring,
+    bool check_only = false, bool debug_mode = false, bool stat_mode = false);
 
 #endif // EGRET_H

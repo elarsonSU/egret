@@ -25,10 +25,11 @@
 #include <string>
 using namespace std;
 
-// Warnings 
-void clearWarnings();
-void addWarning(string message);
-string getWarnings();
+// Alerts 
+void clearAlerts();
+void addWarning(string type, string message);
+void addViolation(string type, string message);
+string getAlerts();
 
 // Egret Exception
 class EgretException {

@@ -24,9 +24,9 @@ EXT_LIB  := egret_ext.cpython-34m.so
 CXXFLAGS := -Wall -I. -g -O0 -fPIC -std=c++11
 LDFLAGS :=
 
-SRC := CharSet.cpp Edge.cpp NFA.cpp RegexLoop.cpp RegexString.cpp ParseTree.cpp \
+SRC := CharSet.cpp Checker.cpp Edge.cpp NFA.cpp RegexLoop.cpp RegexString.cpp ParseTree.cpp \
        Path.cpp Scanner.cpp Stats.cpp TestGenerator.cpp TestString.cpp egret.cpp error.cpp
-HDR := CharSet.h Edge.h NFA.h RegexLoop.h RegexString.h ParseTree.h \
+HDR := CharSet.h Checker.h Edge.h NFA.h RegexLoop.h RegexString.h ParseTree.h \
        Path.h Scanner.h Stats.h TestGenerator.h TestString.h error.h
 OBJ := $(patsubst %.cpp, %.o, $(SRC))
 

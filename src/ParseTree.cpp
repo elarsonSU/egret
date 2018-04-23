@@ -497,7 +497,7 @@ ParseTree::char_range_item()
 
   if (!good_range) {
     stringstream s;
-    s << "ERROR (bad range): " << start << "-" << end;
+    s << "VIOLATION (bad range): " << start << "-" << end;
     throw EgretException(s.str());
   }
 
