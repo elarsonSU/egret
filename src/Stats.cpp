@@ -1,6 +1,6 @@
 /*  Stats.cpp: EGRET stats
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     This file is part of EGRET.

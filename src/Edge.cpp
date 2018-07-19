@@ -1,6 +1,6 @@
 /*  Edge.cpp: an edge in an NFA and a path 
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     This file is part of EGRET.
@@ -19,26 +19,31 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cassert>
 #include <iostream>
 #include <set>
 #include <string>
 #include <vector>
 #include "Edge.h"
-#include "TestString.h"
+#include "Scanner.h"
+#include "Path.h"
 using namespace std;
 
 bool
-Edge::process_edge(TestString test_string, TestString base_substring)
+Edge::process_edge(string test_string, Path *path)
 {
-  // loops need to be processed for each path
   if (type == BEGIN_LOOP_EDGE) {
     regex_loop->set_curr_prefix(test_string);
   }
   if (type == END_LOOP_EDGE) {
     regex_loop->set_curr_substring(test_string);
   }
+  if (type == BACKREFERENCE_EDGE) {
+    backref->set_curr_prefix(test_string);
+    backref->set_curr_substring(path->gen_backref_string(backref->get_group_loc()));
+  }
 
-  // no further work needed if edge already processed
+  // no further work needed if edge already processed from prior path
   if (processed) return false;
   processed = true;
 
@@ -50,7 +55,7 @@ Edge::process_edge(TestString test_string, TestString base_substring)
       return true;
     case STRING_EDGE:
       regex_str->set_prefix(test_string);
-      regex_str->set_substring(base_substring);
+      regex_str->set_substring(Util::get()->get_base_substring());
       return true;
     case BEGIN_LOOP_EDGE:
       regex_loop->set_prefix(test_string);
@@ -58,43 +63,175 @@ Edge::process_edge(TestString test_string, TestString base_substring)
     case END_LOOP_EDGE:
       regex_loop->set_substring_from_curr();
       return true;
+    case BACKREFERENCE_EDGE:
+      backref->set_prefix_from_curr();
+      backref->set_substring_from_curr();
+      return true;
     default:
       return false;
   }
 }
 
-TestString
+string
 Edge::get_substring()
 {
-  TestString s;
+  string s;
   
   switch (type) {
     case CHARACTER_EDGE:
-      s.append(character);
+      s += character;
       return s;
     case CHAR_SET_EDGE:
-      s.append(char_set->get_valid_character());
+      // TODO: Does the character field contain a valid character for char set?
+      s += char_set->get_valid_character();
       return s;
     case STRING_EDGE:
       return regex_str->get_substring();
     case END_LOOP_EDGE:
       return regex_loop->get_substring();
-    case BEGIN_GROUP_EDGE:
-      s.append_begin_group(group);
-      return s;
-    case END_GROUP_EDGE:
-      s.append_end_group(group);
-      return s;
     case BACKREFERENCE_EDGE:
-      s.append_backreference(group, id);
-      return s;
+      return backref->get_substring();
     default:
       return s;
   }
 }
 
+bool
+Edge::is_opt_repeat_begin()
+{
+  return (type == BEGIN_LOOP_EDGE && regex_loop->is_opt_repeat());
+}
+
+bool
+Edge::is_opt_repeat_end()
+{
+  return (type == END_LOOP_EDGE && regex_loop->is_opt_repeat());
+}
+
+bool
+Edge::is_wild_candidate()
+{
+  if (type == CHAR_SET_EDGE && char_set->is_wildcard()) return true;
+  if (type == CHAR_SET_EDGE && char_set->is_complement()) return true;
+  if (type == STRING_EDGE && regex_str->is_wild_candidate()) return true;
+  return false;
+}
+
+bool
+Edge::is_valid_character(char c)
+{
+  if (type == CHARACTER_EDGE && character == c) return true;
+  if (type == CHAR_SET_EDGE && char_set->is_wildcard()) return true;
+  if (type == CHAR_SET_EDGE && char_set->is_valid_character(c)) return true;
+  if (type == STRING_EDGE && regex_str->is_valid_character(c)) return true;
+  return false;
+}
+
+bool
+Edge::is_repeat_begin()
+{
+  if (type != BEGIN_LOOP_EDGE) return false;
+  int upper = regex_loop->get_repeat_upper();
+  if (upper == -1 || upper >= 2) return true;
+  return false;
+}
+
+bool
+Edge::is_repeat_end()
+{
+  if (type != END_LOOP_EDGE) return false;
+  int upper = regex_loop->get_repeat_upper();
+  if (upper == -1 || upper >= 2) return true;
+  return false;
+}
+
+bool
+Edge::is_repeat_punc_candidate()
+{
+  if (type == CHARACTER_EDGE && ispunct(character)) return true;
+  if (type == CHAR_SET_EDGE && char_set->is_repeat_punc_candidate()) return true;
+  return false;
+}
+
+bool
+Edge::is_str_repeat_punc_candidate()
+{
+  return (type == STRING_EDGE && regex_str->is_repeat_punc_candidate());
+}
+
+char 
+Edge::get_repeat_punc_char()
+{
+  if (type == CHARACTER_EDGE) return character;
+  if (type == STRING_EDGE) return regex_str->get_repeat_punc_char();
+  return char_set->get_repeat_punc_char();
+}
+
+int 
+Edge::get_repeat_lower_limit()
+{
+  if (type == STRING_EDGE) return regex_str->get_repeat_lower();
+  return regex_loop->get_repeat_lower();
+}
+
+int 
+Edge::get_repeat_upper_limit()
+{
+  if (type == STRING_EDGE) return regex_str->get_repeat_upper();
+  return regex_loop->get_repeat_upper();
+}
+
+bool
+Edge::is_zero_repeat_begin()
+{
+  return (type == BEGIN_LOOP_EDGE && regex_loop->get_repeat_lower() == 0);
+}
+
+bool
+Edge::is_zero_repeat_end()
+{
+  return (type == END_LOOP_EDGE && regex_loop->get_repeat_lower() == 0);
+}
+
+bool
+Edge::is_digit_too_optional_candidate()
+{
+  return (type == CHAR_SET_EDGE && char_set->is_digit_too_optional_candidate());
+}
+
+string
+Edge::fix_wild_punctuation(char c)
+{
+  string regex = Util::get()->get_regex();
+  string curr_regex = regex.substr(loc.first, loc.second - loc.first + 1);
+
+  string char_str = string(1, c);
+  switch (c) {
+    case '\\':
+    case '[':
+    case ']':
+    case '^':
+    case '-':
+      char_str = "\\" + char_str;
+  } 
+
+  string fixed_char_set;
+  if (curr_regex[0] == '.') {
+    fixed_char_set = "[^" + char_str + "]";
+  }
+  else {
+    assert(curr_regex[0] == '[');
+    size_t pos = curr_regex.find_last_of(']');
+    assert(pos != string::npos);
+    fixed_char_set = curr_regex.substr(0, pos + 1);
+    fixed_char_set.insert(pos, char_str);
+  }
+
+  return fixed_char_set;
+}
+
 void
-Edge::gen_min_iter_string(TestString &min_iter_string)
+Edge::gen_min_iter_string(string &min_iter_string)
 {
   switch (type) {
     case STRING_EDGE:
@@ -107,13 +244,13 @@ Edge::gen_min_iter_string(TestString &min_iter_string)
       regex_loop->gen_min_iter_string(min_iter_string);
       break;
     default:
-      min_iter_string.append(get_substring());
+      min_iter_string += get_substring();
       break;
   }
 }
 
-vector <TestString>
-Edge::gen_evil_strings(TestString path_string, const set <char> &punct_marks)
+vector <string>
+Edge::gen_evil_strings(string path_string, const set <char> &punct_marks)
 {
   switch (type) {
     case CHAR_SET_EDGE:
@@ -122,9 +259,11 @@ Edge::gen_evil_strings(TestString path_string, const set <char> &punct_marks)
       return regex_str->gen_evil_strings(path_string, punct_marks);
     case END_LOOP_EDGE:
       return regex_loop->gen_evil_strings(path_string);
+    case BACKREFERENCE_EDGE:
+      return backref->gen_evil_strings(path_string);
     default:
     {
-      vector <TestString> empty;
+      vector <string> empty;
       return empty;
     }
   }
@@ -135,45 +274,37 @@ Edge::print()
 {
   switch (type) {
     case CHARACTER_EDGE:
-      cout << "CHARACTER " << character << endl;
+      cout << "CHARACTER " << character;
       break;
     case CHAR_SET_EDGE:
       cout << "CHAR_SET ";
       char_set->print();
-      cout << endl;
       break;
     case STRING_EDGE:
       cout << "STRING ";
       regex_str->print();
-      cout << endl;
       break;
     case BEGIN_LOOP_EDGE:
       cout << "BEGIN_LOOP ";
       regex_loop->print();
-      cout << endl;
       break;
     case END_LOOP_EDGE:
       cout << "END_LOOP ";
       regex_loop->print();
-      cout << endl;
       break;
     case CARET_EDGE:
-      cout << "CARET" << endl;
+      cout << "CARET";
       break;
     case DOLLAR_EDGE:
-      cout << "DOLLAR" << endl;
-      break;
-    case EPSILON_EDGE:
-      cout << "EPSILON" << endl;
+      cout << "DOLLAR";
       break;
     case BACKREFERENCE_EDGE:
-      cout << "BACKREFERENCE id:" << id << " " << group_name << " " << group << endl;
+      cout << "BACKREFERENCE ";
+      backref->print();
       break;
-    case BEGIN_GROUP_EDGE:
-      cout << "BEGIN GROUP " << group << endl;
-      break;
-    case END_GROUP_EDGE:
-      cout << "END GROUP " << group << endl;
+    case EPSILON_EDGE:
+      cout << "EPSILON";
       break;
   } 
+  cout << " @ (" << loc.first << "," << loc.second << ")" << endl;
 }

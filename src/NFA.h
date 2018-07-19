@@ -1,6 +1,6 @@
 /*  NFA.h: Nondeterminstic Finite State Automaton
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     Some code in this file was derived from a RE->NFA converter
@@ -65,40 +65,43 @@ private:
   NFA build_nfa_from_tree(ParseNode *tree);
 
   // builds an alternation of nfa1 and nfa2 (nfa1|nfa2)
-  NFA build_nfa_alternation(NFA nfa1, NFA nfa2);
+  NFA build_nfa_alternation(ParseNode *tree);
 
   // builds a concatenation of nfa1 and nfa2 (nfa1nfa2)
-  NFA build_nfa_concat (NFA nfa1, NFA nfa2);
+  NFA build_nfa_concat(ParseNode *tree);
 
   // builds nfa{m,n}
-  NFA build_nfa_repeat(NFA nfa, int repeat_lower, int repeat_upper);
+  NFA build_nfa_repeat(ParseNode *tree);
 
   // builds special node for regex strings such as .+ or \w*
-  NFA build_nfa_string(ParseNode *tree, int repeat_lower, int repeat_upper);
+  NFA build_nfa_string(ParseNode *tree);
 
   // builds (nfa)
-  NFA build_nfa_group(NFA nfa, string name, int num);
+  NFA build_nfa_group(ParseNode *tree);
 
   // builds nfa with character
-  NFA build_nfa_character(char character);
+  NFA build_nfa_character(ParseNode *tree);
 
   // builds nfa with caret
-  NFA build_nfa_caret();
+  NFA build_nfa_caret(ParseNode *tree);
 
   // builds nfa with dollar
-  NFA build_nfa_dollar();
-
-  // builds nfa with backreference
-  NFA build_nfa_backreference(string name, int num, int id);
-
-  // builds nfa with ignored element
-  NFA build_nfa_ignored();
+  NFA build_nfa_dollar(ParseNode *tree);
 
   // builds nfa with char set as input
-  NFA build_nfa_char_set(CharSet *char_set);
+  NFA build_nfa_char_set(ParseNode *tree);
+
+  // builds nfa with ignored element
+  NFA build_nfa_ignored(ParseNode *tree);
+
+  // builds nfa with backreference
+  NFA build_nfa_backreference(ParseNode *tree);
 
   // adds an edge to edge table
   void add_edge(unsigned int from, unsigned int to, Edge *edge);
+
+  // concatenates two NFAs together
+  NFA concat_nfa(NFA nfa1, NFA nfa2);
 
   // shift (renames) all the states in the NFA according to some (positive) shift factor
   void shift_states(unsigned int shift);

@@ -1,6 +1,6 @@
 /*  egret.cpp: entry point into EGRET engine
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     This file is part of EGRET.
@@ -19,45 +19,42 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <algorithm>
+#include "Checker.h"
 #include "NFA.h"
 #include "ParseTree.h"
 #include "Path.h"
 #include "Scanner.h"
 #include "Stats.h"
-#include "Checker.h"
 #include "TestGenerator.h"
-#include "TestString.h"
-#include "error.h"
+#include "Util.h"
 
 using namespace std;
 
 vector <string>
-run_engine(string regex, string base,
-    bool check_only = false, bool debug_mode = false, bool stat_mode = false)
+run_engine(string regex, string base_substring, bool check_mode = false, bool web_mode = false,
+    bool debug_mode = false, bool stat_mode = false)
 {
   Stats stats;
   vector <string> test_strings;
 
-  // clear alerts
-  clearAlerts();
-
   try {
 
     // check and convert base substring
-    TestString base_substring;
-    if (base.length() < 2) {
+    if (base_substring.length() < 2) {
       throw EgretException("ERROR (bad arguments): Base substring must have at least two letters");
     }
-    for (unsigned int i = 0; i < base.length(); i++) {
-      if (!isalpha(base[i])) {
+    for (unsigned int i = 0; i < base_substring.length(); i++) {
+      if (!isalpha(base_substring[i])) {
         throw EgretException("ERROR (bad arguments): Base substring can only contain letters");
       }
     }
-    base_substring.append(base);
+
+    // set global options
+    Util::get()->init(regex, check_mode, web_mode, base_substring);
 
     // start debug mode
     if (debug_mode) cout << "RegEx: " << regex << endl;
@@ -84,16 +81,18 @@ run_engine(string regex, string base,
     vector <Path> paths = nfa.find_basis_paths();
     vector <Path>::iterator path_iter;
     for (path_iter = paths.begin(); path_iter != paths.end(); path_iter++) {
-      path_iter->process_path(base_substring);
+      path_iter->process_path();
     }
 
     // run checker
-    Checker checker(paths, base_substring, tree.get_punct_marks(), debug_mode);
-    checker.check();
+    if (check_mode) {
+      Checker checker(paths, scanner.get_tokens());
+      checker.check();
+    }
 
     // generate tests
-    if (!check_only) {
-      TestGenerator gen(paths, base_substring, tree.get_punct_marks(), debug_mode);
+    if (!check_mode) {
+      TestGenerator gen(paths, tree.get_punct_marks(), debug_mode);
       test_strings = gen.gen_test_strings();
       if (stat_mode) gen.add_stats(stats);
     }
@@ -103,14 +102,20 @@ run_engine(string regex, string base,
   }
   catch (EgretException const &e) {
     vector <string> result;
-    result.push_back(e.getError());
+    result.push_back(e.get_error());
     return result;
   }
 
   // Add alerts to front of list.
-  string alerts = getAlerts();
-  if (alerts == "") alerts = "SUCCESS";
-  test_strings.insert(test_strings.begin(), alerts);
+  vector <string> alerts = Util::get()->get_alerts();
+  if (check_mode) {
+    if (alerts.size() == 0) {
+      alerts.insert(alerts.begin(), "No violations detected.");
+    }
+    return alerts;
+  }
+  test_strings.insert(test_strings.begin(),"BEGIN");
+  test_strings.insert(test_strings.begin(), alerts.begin(), alerts.end());
 
   return test_strings;
 }

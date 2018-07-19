@@ -1,6 +1,6 @@
 /*  egret_ext.cpp: Python interface for C++ engine
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     This file is part of EGRET.
@@ -32,16 +32,17 @@ egret_run(PyObject *self, PyObject *args)
 {
   const char *regex;
   const char *base_substring;
-  int check_only;
+  int check_mode;
+  int web_mode;
   int debug_mode;
   int stat_mode;
 
-  if (!PyArg_ParseTuple(args, "ssppp", &regex, &base_substring,
-        &check_only, &debug_mode, &stat_mode))
+  if (!PyArg_ParseTuple(args, "sspppp", &regex, &base_substring,
+        &check_mode, &web_mode, &debug_mode, &stat_mode))
     return NULL;
 
   vector <string> tests =
-    run_engine(regex, base_substring, check_only, debug_mode, stat_mode);
+    run_engine(regex, base_substring, check_mode, web_mode, debug_mode, stat_mode);
 
   PyObject *list = PyList_New(0);
   vector <string>::iterator it;

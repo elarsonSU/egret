@@ -1,4 +1,4 @@
-# Copyright (C) 2016  Eric Larson and Anna Kirk
+# Copyright (C) 2016-2018  Eric Larson and Anna Kirk
 # elarson@seattleu.edu
 # 
 # This file is part of EGRET.
@@ -24,10 +24,10 @@ EXT_LIB  := egret_ext.cpython-34m.so
 CXXFLAGS := -Wall -I. -g -O0 -fPIC -std=c++11
 LDFLAGS :=
 
-SRC := CharSet.cpp Checker.cpp Edge.cpp NFA.cpp RegexLoop.cpp RegexString.cpp ParseTree.cpp \
-       Path.cpp Scanner.cpp Stats.cpp TestGenerator.cpp TestString.cpp egret.cpp error.cpp
-HDR := CharSet.h Checker.h Edge.h NFA.h RegexLoop.h RegexString.h ParseTree.h \
-       Path.h Scanner.h Stats.h TestGenerator.h TestString.h error.h
+SRC := Backref.cpp CharSet.cpp Checker.cpp Edge.cpp NFA.cpp RegexLoop.cpp RegexString.cpp \
+       ParseTree.cpp Path.cpp Scanner.cpp Stats.cpp TestGenerator.cpp Util.cpp egret.cpp
+HDR := Backref.h CharSet.h Checker.h Edge.h NFA.h RegexLoop.h RegexString.h \
+       ParseTree.cpp Path.h Scanner.h Stats.h TestGenerator.h Util.h
 OBJ := $(patsubst %.cpp, %.o, $(SRC))
 
 all: libegret.a egret_ext

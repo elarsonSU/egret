@@ -1,6 +1,6 @@
 # create_ext.py: Creates egret_ext Python library
 #
-# Copyright (C) 2016  Eric Larson and Anna Kirk
+# Copyright (C) 2016-2018  Eric Larson and Anna Kirk
 # elarson@seattleu.edu
 # 
 # This file is part of EGRET.

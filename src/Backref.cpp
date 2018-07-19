@@ -1,4 +1,4 @@
-/*  RegexLoop.cpp: represents a regex repeat quantifier
+/*  Backref.cpp: represents a regex repeat quantifier
 
     Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
@@ -22,63 +22,35 @@
 #include <iostream>
 #include <set>
 #include <string>
-#include "RegexLoop.h"
+#include "Backref.h"
 using namespace std;
 
 void
-RegexLoop::set_curr_substring(string test_string)
+Backref::gen_min_iter_string(string &min_iter_string)
 {
-  curr_substring = test_string.substr(curr_prefix.size());
-}
-
-string
-RegexLoop::get_substring()
-{
-  // The test string already contains one iteration from the elements in the loop.
-  // This function return additional iterations if the lower bound is greater than 1.
-  string extra;
-  for (int j = 1; j < repeat_lower; j++) {
-    extra += curr_substring;
-  }
-
-  return extra;
-}
-
-bool
-RegexLoop::is_opt_repeat()
-{
-  return (repeat_lower == 0 && repeat_upper == 1);
-}
-
-void
-RegexLoop::gen_min_iter_string(string &min_iter_string)
-{
-  if (repeat_lower != 0) {
-    min_iter_string += get_substring();
-  }
-  else {
-    min_iter_string = curr_prefix;
-  }
+  min_iter_string.append(get_substring());
 }
 
 vector <string>
-RegexLoop::gen_evil_strings(string test_string)
+Backref::gen_evil_strings(string test_string)
 {
   vector <string> evil_strings;
+  return evil_strings;
 
+#if 0 // TODO: Reimplement backreference evil strings
   // Create suffix: substring after the loop
   int start = prefix.size() + substring.size();
-  string suffix = test_string.substr(start);
+  string suffix = test_string.create_substr(start);
 
   // Create string with one less iteration
   string one_less_string = prefix;
-  one_less_string += suffix;
+  one_less_string.append(suffix);
 
   // Create string with one more iteration
   string one_more_string = prefix;
-  one_more_string += substring;
-  one_more_string += substring;
-  one_more_string += suffix;
+  one_more_string.append(substring);
+  one_more_string.append(substring);
+  one_more_string.append(suffix);
 
   if (repeat_upper != -1) {
 
@@ -100,20 +72,20 @@ RegexLoop::gen_evil_strings(string test_string)
       if (base_iterations == 0) base_iterations = 1;
       string path_elements = substring;
       for (int i = base_iterations; i < repeat_upper; i++) {
-        path_elements += substring;
+        path_elements.append(substring);
       }
 
       // Add the upper bound string.
       string upper_bound_string = prefix;
-      upper_bound_string += path_elements;
-      upper_bound_string += suffix;
+      upper_bound_string.append(path_elements);
+      upper_bound_string.append(suffix);
       evil_strings.push_back(upper_bound_string);
 
       // Add the string with one more iteration past the upper bound.
       string past_bound_string = prefix;
-      past_bound_string += path_elements;
-      past_bound_string += substring;
-      past_bound_string += suffix;
+      past_bound_string.append(path_elements);
+      past_bound_string.append(substring);
+      past_bound_string.append(suffix);
       evil_strings.push_back(past_bound_string);
     } 
   }
@@ -132,21 +104,80 @@ RegexLoop::gen_evil_strings(string test_string)
   }
 
   return evil_strings;
+#endif
+
 }
 
-void
-RegexLoop::print()
+#if 0 // TODO: Reimplement backreference evil strings
+vector <string>
+gen_evil_backreference_strings(vector <int> &backrefs_done)
 {
-  if (repeat_lower == 0 && repeat_upper == -1)
-    cout << "*";
-  else if (repeat_lower == 1 && repeat_upper == -1)
-    cout << "+";
-  else if (repeat_lower == 0 && repeat_upper == 1)
-    cout << "?";
-  else if (repeat_upper == -1)
-    cout << "{" << repeat_lower << ",}";
-  else if (repeat_lower == repeat_upper)
-    cout << "{" << repeat_lower << "}";
-  else 
-    cout << "{" << repeat_lower << "," << repeat_upper << "}";
+  // create evil strings for each backreference
+  vector <int>::iterator bit;
+  for (bit = backrefs.begin(); bit != backrefs.end(); bit++) {
+
+    string evil_add = "";
+    string evil_remove = "";
+    string evil_modify = "";
+
+    for (it = test_string.begin(); it != test_string.end(); it++) {
+      if (it->type == TEST_STR_CHAR) {
+	evil_add += it->character;
+	evil_remove += it->character;
+	evil_modify += it->character;
+      }
+      else if (it->type == TEST_STR_BACKREFERENCE) {
+	string temp;
+
+	// if current backreference, generate evil strings
+	if (it->id == *bit) {
+
+	  // evil_add
+	  temp = group_strings[it->group];
+	  temp.push_back(temp.back());
+	  evil_add += temp;
+
+	  // evil_remove
+	  temp = group_strings[it->group];
+	  if(temp.length() > 0) {
+	    temp.pop_back();
+	  }
+	  evil_remove += temp;
+
+	  // evil_modify
+	  temp = group_strings[it->group];
+	  int edit = temp.length()/2;
+	  char c = temp[edit];
+	  c += 1;
+	  temp[edit] = c;
+	  evil_modify += temp;
+	}
+
+	// not current backreference --> normal backref substitution
+	else {
+	  temp = group_strings[it->group];
+	  evil_add += temp;
+	  evil_remove += temp;
+	  evil_modify += temp;
+	}
+      }
+    }
+    evil_strings.push_back(evil_add);
+    evil_strings.push_back(evil_remove);
+    evil_strings.push_back(evil_modify);
+  }
+  
+  return evil_strings;
 }
+#endif
+
+void
+Backref::print()
+{
+  cout << "Group " << group_number;
+  if (group_name != "") {
+    cout << "(" << group_name << ")";
+  }
+  cout << " @ (" << group_loc.first << "," << group_loc.second << ")";
+}
+

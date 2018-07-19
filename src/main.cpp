@@ -1,6 +1,6 @@
 /*  main.cpp: test driver for EGRET engine (used for debugging)
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     This file is part of EGRET.
@@ -36,7 +36,8 @@ main(int argc, char *argv[])
   int idx = 1;
   string regex = "";
   string base_substring = "evil";
-  bool check_only = false;
+  bool check_mode = false;
+  bool web_mode = false;
   bool debug_mode = false;
   bool stat_mode = false;
 
@@ -79,9 +80,9 @@ main(int argc, char *argv[])
       base_substring = get_arg(idx, argc, argv);
     }
 
-    // -c: only run checker
+    // -c: run check mode
     else if (strcmp(arg, "-c") == 0) {
-      check_only = true;
+      check_mode = true;
     }
 
     // -d: print debug information based on the given mode 
@@ -93,6 +94,12 @@ main(int argc, char *argv[])
     else if (strcmp(arg, "-s") == 0) {
       stat_mode = true;
     }
+
+    // -w: run web mode
+    else if (strcmp(arg, "-w") == 0) {
+      web_mode = true;
+    }
+
 
     // everything else is invalid
     else {
@@ -107,7 +114,7 @@ main(int argc, char *argv[])
   }
 
   vector <string> test_strings =
-    run_engine(regex, base_substring, check_only, debug_mode, stat_mode);
+    run_engine(regex, base_substring, check_mode, web_mode, debug_mode, stat_mode);
 
   vector <string>::iterator it;
   for (it = test_strings.begin(); it != test_strings.end(); it++) {

@@ -1,6 +1,6 @@
 # egret.py: Command line interface for EGRET
 #
-# Copyright (C) 2016  Eric Larson and Anna Kirk
+# Copyright (C) 2016-2018  Eric Larson and Anna Kirk
 # elarson@seattleu.edu
 # 
 # This file is part of EGRET.
@@ -21,7 +21,6 @@
 import re
 import sys	
 import egret_ext
-import egret_api
 from optparse import OptionParser
 #import time
 
@@ -75,8 +74,6 @@ parser.add_option("-r", "--regex", dest = "regex", help = "regular expression")
 parser.add_option("-b", "--base_substring", dest = "baseSubstring",
     default = "evil", help = "base substring for regex strings")
 parser.add_option("-o", "--output_file", dest = "outputFile", help = "output file name")
-parser.add_option("-c", "--check_only", action = "store_true", dest = "checkOnly",
-    default = False, help = "only run checker")
 parser.add_option("-d", "--debug", action = "store_true", dest = "debugMode",
     default = False, help = "display debug info")
 parser.add_option("-s", "--stat", action = "store_true", dest = "statMode",
@@ -114,19 +111,30 @@ try:
     # execute regex-test
     #start_time = time.process_time()
     inputStrs = egret_ext.run(regexStr, opts.baseSubstring,
-        opts.checkOnly, opts.debugMode, opts.statMode)
+        False, False, opts.debugMode, opts.statMode)
     status = inputStrs[0]
-    inputStrs = inputStrs[1:]
     hasError = (status[0:5] == "ERROR")
-    hasAlert = (not hasError and status != "SUCCESS")
 
 except re.error as e:
     status = "ERROR (compiler error): Regular expression did not compile: " + str(e)
     hasError = True
 
-skipStrings = hasError or opts.checkOnly
+if hasError:
+    alerts = [status]
+else:
+    idx = 0
+    line = inputStrs[idx]
+    while line != "BEGIN":
+        idx += 1;
+        line = inputStrs[idx]
+    if idx == 0:
+        alerts = []
+        inputStrs = inputStrs[1:]
+    else:
+        alerts = inputStrs[:idx]
+        inputStrs = inputStrs[idx+1:]
 
-if not skipStrings:
+if not hasError:
 
   # test each string against the regex
   matches = []
@@ -169,25 +177,25 @@ if not skipStrings:
     #print(fmt.format("Time", elapsed_time))
 
 
-# write the output header
+# create the output header
 header = "Regex: " + regexStr + "\n\n"
 if descStr != "":
     header += ("Description: " + descStr + "\n\n")
-if hasError:
-    header += (status + "\n")
-elif hasAlert:
-    header += ("Alerts:\n" + status + "\n")
+for line in alerts:
+    header += line
+    header += "\n"
 
+# write the output header
 if opts.outputFile:
     outFile = open(opts.outputFile, 'w')
     outFile.write(header)
-    if skipStrings:
+    if hasError:
         outFile.close();
         sys.exit(-1);
 else:
     print()
     print(header, end='')
-    if skipStrings:
+    if hasError:
         sys.exit(-1);
 
 # print the match strings

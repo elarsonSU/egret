@@ -1,6 +1,6 @@
 /*  egret.h: entry point into EGRET engine
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     This file is part of EGRET.
@@ -29,6 +29,6 @@ using namespace std;
 // run_engine: entry point into EGRET engine
 vector <string>
 run_engine(string regex, string base_substring,
-    bool check_only = false, bool debug_mode = false, bool stat_mode = false);
+    bool check_mode = false, bool web_mode = false, bool debug_mode = false, bool stat_mode = false);
 
 #endif // EGRET_H

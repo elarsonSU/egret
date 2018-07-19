@@ -1,6 +1,6 @@
 /*  TestGenerator.h: Generates paths and strings
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     Some code in this file was derived from a RE->NFA converter
@@ -29,16 +29,14 @@
 #include <string>
 #include <vector>
 #include "Path.h"
-#include "TestString.h"
 using namespace std;
 
 class TestGenerator {
 
 public:
 
-  TestGenerator(vector <Path> p, TestString b, set <char> m, bool d) {
+  TestGenerator(vector <Path> p, set <char> m, bool d) {
     paths = p;
-    base_substring = b;
     punct_marks = m;
     debug_mode = d;
   }
@@ -52,11 +50,10 @@ public:
 private:
 
   vector <Path> paths;		// list of paths
-  TestString base_substring;    // base string for regex strings
   set <char> punct_marks;	// set of punct marks
   bool debug_mode;		// set if debug mode is on
 
-  vector <TestString> test_strings;     // list of test strings
+  vector <string> test_strings;     // list of test strings
 
   int num_gen_strings;          // number of generated strings (for stats)
 
@@ -65,22 +62,10 @@ private:
   // get initial set of strings
   void get_initial_strings();
 
-  // generate backreference strings
-  vector <string> gen_evil_backreference_strings();
-
   // generate minimum iteration strings
   void gen_min_iter_strings();
 
   // generates evil strings
   void gen_evil_strings();
-
-  // adds a string to test string vector (unless it is already there)
-  void add_to_test_strings(TestString s);
-
-  // adds a set of strings to test string vector
-  void add_to_test_strings(vector <TestString> strs);
-
-  // add a string to return strings (unless it is already there)
-  void add_to_return_strings(vector <string> &return_strs, string s);
 };
 #endif // TEST_GENERATOR_H

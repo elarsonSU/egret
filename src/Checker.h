@@ -1,6 +1,6 @@
 /*  Checker.h: Regular Expression Checker
 
-    Copyright (C) 2016-18  Eric Larson and Tyler Hartje
+    Copyright (C) 2016-2018  Eric Larson and Tyler Hartje
     elarson@seattleu.edu
 
     This file is part of EGRET.
@@ -25,20 +25,17 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "Scanner.h"
 #include "Path.h"
-#include "TestString.h"
 using namespace std;
 
 class Checker {
 
 public:
 
-  // TODO: Need all four of these arguments?
-  Checker(vector <Path> p, TestString b, set <char> m, bool d) {
+  Checker(vector <Path> p, vector <Token> t) {
     paths = p;
-    base_substring = b;
-    punct_marks = m;
-    debug_mode = d;
+    tokens = t;
   }
 
   // checker entry point
@@ -47,9 +44,7 @@ public:
 private:
 
   vector <Path> paths;		// list of paths
-  TestString base_substring;    // base string for regex strings
-  set <char> punct_marks;	// set of punct marks
-  bool debug_mode;		// set if debug mode is on
+  vector <Token> tokens;        // set of tokens - used for generated fixes
 
   // CHECKER FUNCTIONS
 
@@ -61,6 +56,21 @@ private:
 
   // check chararacter sets
   void check_charsets();
+
+  // check optional braces
+  void check_optional_braces();
+
+  // checks if wildcard is just before/after punctuation mark
+  void check_wild_punctuation();
+
+  // checks if punctuation can be repeated in certain situations
+  void check_repeat_punctuation();
+
+   // checks if digits are too optional
+   void check_digit_too_optional();
+
+  // fix anchors
+  string fix_anchors();
 };
 
 #endif // CHECKER_H

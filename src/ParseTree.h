@@ -1,6 +1,6 @@
 /*  ParseTree.h: recursive descent parser
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     Some code in this file was derived from a RE->NFA converter
@@ -86,6 +86,7 @@
 #include <cassert>
 #include <unordered_map>
 #include "Scanner.h"
+#include "Backref.h"
 #include "CharSet.h"
 #include "Stats.h"
 using namespace std;
@@ -106,53 +107,56 @@ typedef enum
 
 struct ParseNode
 {
-  ParseNode(NodeType t, ParseNode *l, ParseNode *r) {
+  ParseNode(NodeType t, Location _loc, ParseNode *l, ParseNode *r) {
     type = t;
+    loc = _loc;
     left = l;
     right = r;
     char_set = NULL;
   }
 
-  ParseNode(NodeType t, string _name, int _num, ParseNode *l, ParseNode *r) {
+  ParseNode(NodeType t, Location _loc, string _name, ParseNode *l, ParseNode *r) {
     assert(t == GROUP_NODE);
     type = t;
-    name = _name;
-    group_num = _num;
+    loc = _loc;
+    group_name = _name;
     left = l;
     right = r;
     char_set = NULL;
   }
 
-  ParseNode(NodeType t, CharSet *c) {
+  ParseNode(NodeType t, Location _loc, CharSet *c) {
     assert(t == CHAR_SET_NODE);
     type = t;
+    loc = _loc;
     left = NULL;
     right = NULL;
     char_set = c;
   }
 
-  ParseNode(NodeType t, char c) {
+  ParseNode(NodeType t, Location _loc, char c) {
     assert(t == CHARACTER_NODE);
     type = t;
+    loc = _loc;
     left = NULL;
     right = NULL;
     char_set = NULL;
     character = c;
   }
 
-  ParseNode(NodeType t, int _backref_value, string _name) {
+  ParseNode(NodeType t, Location _loc, Backref *b) {
     assert(t == BACKREFERENCE_NODE);
     type = t;
+    loc = _loc;
     left = NULL;
     right = NULL;
-    backref_value = _backref_value;
-    name = _name;
-    backref_id = 0;
+    backref = b;
   }
 
-  ParseNode(NodeType t, ParseNode *l, int lower, int upper) {
+  ParseNode(NodeType t, Location _loc, ParseNode *l, int lower, int upper) {
     assert(t == REPEAT_NODE);
     type = t;
+    loc = _loc;
     left = l;
     right = NULL;
     char_set = NULL;
@@ -161,16 +165,15 @@ struct ParseNode
   }
 
   NodeType type;
+  Location loc;
   ParseNode *left;
   ParseNode *right;
-  CharSet *char_set;	// For CHAR_SET_NODE
   char character;	// For CHARACTER_NODE
+  CharSet *char_set;	// For CHAR_SET_NODE
   int repeat_lower;	// For REPEAT_NODE
   int repeat_upper;	// For REPEAT_NODE (-1 for no limit)
-  int backref_value;  // For BACKREFERENCE_NODE
-  int backref_id;  // For BACKREFERENCE_NODE
-  int group_num;  // For BACKREFERENCE_NODE and GROUP_NODE
-  string name;  // For BACKREFERENCE_NODE
+  Backref *backref;     // For BACKREFERENCE_NODE
+  string group_name;    // For GROUP_NODE
 };
 
 class ParseTree {
@@ -197,8 +200,9 @@ private:
   ParseNode *root;		// root of parse tree
   Scanner scanner;		// scanner
   set<char> punct_marks;	// set of punctuation marks
-  unordered_map<string, int> group_names {};  // set of group names and corresponding group numbers
-  int backreference_count; // number of backreferences encountered
+  unordered_map<int, Location> group_locs;
+  unordered_map<string, Location> named_group_locs;
+  int group_count;
 
   // creation functions
   ParseNode *expr();
@@ -209,7 +213,7 @@ private:
   ParseNode *character();
   ParseNode *char_class();
   ParseNode *char_set();
-  ParseNode *char_list();
+  ParseNode *char_list(int start_loc);
   CharSetItem list_item();
   CharSetItem character_item();
   CharSetItem char_class_item();
@@ -217,8 +221,6 @@ private:
 
   // print the tree
   void print_tree(ParseNode *node, unsigned offset);
-  void count_groups();
-  int count_g(ParseNode *node, unsigned offset, int count);
 
   // gather stats
   struct ParseTreeStats {

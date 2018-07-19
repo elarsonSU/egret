@@ -1,6 +1,6 @@
 /*  Scanner.cpp: scanner for regular expression, used by parser 
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     Some code in this file was derived from a RE->NFA converter
@@ -29,7 +29,7 @@
 #include <vector>
 #include "Scanner.h"
 #include "Stats.h"
-#include "error.h"
+#include "Util.h"
 
 using namespace std;
 
@@ -41,6 +41,7 @@ Scanner::init(string in)
   while (idx < in.length()) {
 
     Token token;
+    token.loc.first = idx;
     switch (in[idx]) {
 
     case '\\':
@@ -69,31 +70,85 @@ Scanner::init(string in)
 	// \b is backspace in a character set (unsupported) and word boundary otherwise
         case 'b':
 	  if (in_set) {
-	    throw EgretException("ERROR (unsupported): contains unsupported character \\b");
+            token.type = CHARACTER;
+            token.character = '\b';
 	  }
 	  else {
 	    token.type = WORD_BOUNDARY;
-	    addWarning("ignored", "Regex contains ignored element \\b");
+            token.loc.second = idx;
+            Alert a("ignored", "Regex contains ignored element \\b", token.loc);
+            a.warning = true;
+            Util::get()->add_alert(a);
 	  }
 	  break;
 	// \B is also treated as word boundary
 	case 'B':
+        {
 	  token.type = WORD_BOUNDARY;
-	  addWarning("ignored", "Regex contains ignored element \\B");
+          token.loc.second = idx;
+          Alert a("ignored", "Regex contains ignored element \\B", token.loc);
+          a.warning = true;
+          Util::get()->add_alert(a);
 	  break;
-	// Escaped characters are unsupported
+        }
+	// Escaped characters are unsupported for test generation but supported for check mode
+        // TODO: Fix test generation with these characters
         case 'a':
+          if (Util::get()->is_check_mode()) {
+	    token.type = CHARACTER;
+	    token.character = '\a';
+          }
+          else {
+            throw EgretException("ERROR (unsupported): contains unsupported character \\a");
+          }
+	  break;
         case 'f':
+          if (Util::get()->is_check_mode()) {
+	    token.type = CHARACTER;
+	    token.character = '\f';
+          }
+          else {
+            throw EgretException("ERROR (unsupported): contains unsupported character \\f");
+          }
+	  break;
 	case 'n':
+          if (Util::get()->is_check_mode()) {
+	    token.type = CHARACTER;
+	    token.character = '\n';
+          }
+          else {
+            throw EgretException("ERROR (unsupported): contains unsupported character \\n");
+          }
+	  break;
 	case 'r':
+          if (Util::get()->is_check_mode()) {
+	    token.type = CHARACTER;
+	    token.character = '\r';
+          }
+          else {
+            throw EgretException("ERROR (unsupported): contains unsupported character \\r");
+          }
+	  break;
 	case 't':
+          if (Util::get()->is_check_mode()) {
+	    token.type = CHARACTER;
+	    token.character = '\t';
+          }
+          else {
+            throw EgretException("ERROR (unsupported): contains unsupported character \\t");
+          }
+	  break;
 	case 'v':
+          if (Util::get()->is_check_mode()) {
+	    token.type = CHARACTER;
+	    token.character = '\v';
+          }
+          else {
+            throw EgretException("ERROR (unsupported): contains unsupported character \\v");
+          }
+	  break;
 	case 'p':
-	{
-	  stringstream s;
-	  s << "ERROR (unsupported): contains unsupported character \\" << c;
-	  throw EgretException(s.str());
-	}
+          throw EgretException("ERROR (unsupported): contains unsupported character \\p");
 	case '\\':
 	  token.type = CHARACTER;
 	  token.character = '\\';
@@ -288,7 +343,7 @@ Scanner::init(string in)
       break;
 
     case '{':
-      // check if in set --> mataches left brace
+      // check if in set --> matches left brace
       if (in_set) {
 	token.type = CHARACTER;
         token.character = in[idx];
@@ -316,11 +371,30 @@ Scanner::init(string in)
       token.character = in[idx];
     }
 
+    token.loc.second = idx;
     tokens.push_back(token);
     idx++;
   }
   
   index = 0;
+
+
+  // Check tokens
+  int curr_index = 0;
+  vector <Token>::iterator vi;
+  for (vi = tokens.begin(); vi != tokens.end(); vi++) {
+    int start = vi->loc.first;
+    int end = vi->loc.second;
+    if (start != curr_index) {
+      print();
+      throw EgretException("ERROR (internal): Token location not set properly");
+    }
+    if (end < start) {
+      print();
+      throw EgretException("ERROR (internal): Token location not set properly");
+    }
+    curr_index = end + 1;
+  }
 }
 
 char
@@ -342,6 +416,7 @@ Scanner::process_octal(string in, unsigned int &idx, char first_digit)
   char second_digit;
   char third_digit;
   Token token;
+  token.loc.first = idx - 1;
  
   // grab the second digit if one exists
   if (idx + 1 >= in.length()) {
@@ -355,11 +430,19 @@ Scanner::process_octal(string in, unsigned int &idx, char first_digit)
   // only one digit - either null or backreference (both are unsupported)
   if (only_one_digit) {
     if (first_digit == '0') {
-      throw EgretException("ERROR (unsupported): contains unsupported character \\0");
-    } else {
+      if (Util::get()->is_check_mode()) {
+        token.type = CHARACTER;
+        token.character = '\0';
+        return token;
+      }
+      else {
+        throw EgretException("ERROR (unsupported): contains unsupported character \\0");
+      }
+    }
+    else {
       token.type = BACKREFERENCE;
-      token.backref_value = first_digit - '0';
-      token.name = "";
+      token.group_num = first_digit - '0';
+      token.group_name = "";
       return token;
     }
   }
@@ -386,7 +469,7 @@ Scanner::process_octal(string in, unsigned int &idx, char first_digit)
     }
 
     // check the validity of the octal value
-    if (octal_value < 32 || octal_value > 126) {
+    if (octal_value > 126 || (octal_value < 32 && !Util::get()->is_check_mode())) {
       stringstream s;
       s << "ERROR (unsupported): contains unsupported octal value " << octal_value;
       throw EgretException(s.str());
@@ -394,11 +477,12 @@ Scanner::process_octal(string in, unsigned int &idx, char first_digit)
 
     token.type = CHARACTER;
     token.character = octal_value;
-  } else {
+  }
+  else {
     token.type = BACKREFERENCE;
-    token.backref_value = ((first_digit - '0') * 10) + (second_digit - '0');
+    token.group_num = ((first_digit - '0') * 10) + (second_digit - '0');
+    token.group_name = "";
     idx++;
-    token.name = "";
   }
 
   return token;
@@ -407,61 +491,41 @@ Scanner::process_octal(string in, unsigned int &idx, char first_digit)
 Token
 Scanner::process_hex(string in, unsigned int &idx, int num_digits)
 {
-  // if number of digits is greater than 2, the extra (left) digits must be zero
-  // as no unicode (outside ascii) are supported.
-  for (int i = 2; i < num_digits; i++) {
-    char d = get_next_char(in, idx);
-    if (d != '0') {
+  Token token;
+  token.loc.first = idx - 1;
+
+  int hex_value = 0;
+  for (int i = 0; i < num_digits; i++) {
+
+    char digit = get_next_char(in, idx);
+    int digit_val;
+
+    if (digit >= '0' && digit <= '9') {
+      digit_val = digit - '0';
+    }
+    else if (digit >= 'A' && digit <= 'F') {
+      digit_val = digit - 'A' + 10;
+    }
+    else if (digit >= 'a' && digit <= 'f') {
+      digit_val = digit - 'a' + 10;
+    }
+    else {
       stringstream s;
-      s << "ERROR (unsupported): Unsupported " << num_digits << "-digit hex number";
+      s << "ERROR (parse error): Invalid hex digit " << digit;
       throw EgretException(s.str());
     }
-  }
 
-  // get the new two characters which must be hex digits
-  char first_digit = get_next_char(in, idx);
-  char second_digit = get_next_char(in, idx);
-
-  // compute the hex value
-  int hex_value;
-  if (first_digit >= '0' && first_digit <= '9') {
-    hex_value = (first_digit - '0') * 16;
-  }
-  else if (first_digit >= 'A' && first_digit <= 'F') {
-    hex_value = (first_digit - 'A' + 10) * 16;
-  }
-  else if (first_digit >= 'a' && first_digit <= 'f') {
-    hex_value = (first_digit - 'a' + 10) * 16;
-  }
-  else {
-    stringstream s;
-    s << "ERROR (parse error): Invalid hex digit " << first_digit;
-    throw EgretException(s.str());
-  }
-  if (second_digit >= '0' && second_digit <= '9') {
-    hex_value += (second_digit - '0');
-  }
-  else if (second_digit >= 'A' && second_digit <= 'F') {
-    hex_value += (second_digit - 'A' + 10);
-  }
-  else if (second_digit >= 'a' && second_digit <= 'f') {
-    hex_value += (second_digit - 'a' + 10);
-  }
-  else {
-    stringstream s;
-    s << "ERROR (parse error): Invalid hex digit " << second_digit;
-    throw EgretException(s.str());
+    hex_value = (hex_value * 16) + digit_val;
   }
 
   // check the validity of the hex value
-  if (hex_value < 32 || hex_value > 126) {
+  if (hex_value > 126 || (hex_value < 32 && !Util::get()->is_check_mode())) {
     stringstream s;
     s << "ERROR (unsupported): contains unsupported hex value " << hex_value;
     throw EgretException(s.str());
   }
 
   // return the hex value
-  Token token;
   token.type = CHARACTER;
   token.character = hex_value;
 
@@ -472,6 +536,8 @@ Token
 Scanner::process_extension(string in, unsigned int &idx)
 {
   Token token;
+  token.loc.first = idx;
+  int start_loc = idx;
 
   // get type of extension
   char ext = get_next_char(in, idx);
@@ -493,11 +559,11 @@ Scanner::process_extension(string in, unsigned int &idx)
       }
       idx--;
       token.type = BACKREFERENCE;
-      token.backref_value = 0;
-      token.name = s.str();
+      token.group_num = 0;
+      token.group_name = s.str();
     }
     else if (c != '<') {
-      throw EgretException("ERROR (unsupported): Improperly specified named group - expected < after (?P");
+      throw EgretException("ERROR (parse error): Improperly specified named group - expected < after (?P");
     }
     else {
       stringstream s;
@@ -507,18 +573,28 @@ Scanner::process_extension(string in, unsigned int &idx)
 	  s << c;
       }
       token.type = NAMED_GROUP_EXT;
-      token.name = s.str();
+      token.group_name = s.str();
     }
     break;
   }
 
+  // TODO: These are not test - especially comments which should be ignored up until the )
   case '#':
   case '=':
   case '!':
+  case 'a':
+  case 'i':
+  case 'L':
+  case 'm':
+  case 's':
+  case 'u':
+  case 'x':
   {
     stringstream s;
     s << "Regex contains ignored extension ?" << ext;
-    addWarning("ignored", s.str());
+    Alert a("ignored", s.str(), make_pair(start_loc, idx));
+    a.warning = true;
+    Util::get()->add_alert(a);
     token.type = IGNORED_EXT;
     break;
   }
@@ -526,24 +602,19 @@ Scanner::process_extension(string in, unsigned int &idx)
   case '<':
   {
     char c = get_next_char(in, idx);
-    if (c == '=' || c == '!') {
-      stringstream s;
-      s << "Regex contains ignored extension ?<" << c;
-      addWarning("ignored", s.str());
-      token.type = IGNORED_EXT;
-    }
-    else {
-      stringstream s;
-      s << "ERROR (unsupported): Unsupported extension ?<" << c;
-      throw EgretException(s.str());
-    }
+    stringstream s;
+    s << "Regex contains ignored extension ?<" << c;
+    Alert a("ignored", s.str(), make_pair(start_loc, idx));
+    a.warning = true;
+    Util::get()->add_alert(a);
+    token.type = IGNORED_EXT;
     break;
   }
 
   default:
   {
     stringstream s;
-    s << "ERROR (unsupported): Unsupported extension ?" << ext;
+    s << "ERROR (internal): Unexpected extension ?" << ext;
     throw EgretException(s.str());
   }
 
@@ -576,6 +647,7 @@ Scanner::process_repeat(string in, unsigned int &idx)
   // 
   int current_idx = idx;
   Token token;
+  token.loc.first = idx;
   token.type = CHARACTER;
   token.character = '{';
 
@@ -698,6 +770,18 @@ Scanner::get_type_str()
   return token_type_to_str(get_type());
 }
 
+Location
+Scanner::get_loc()
+{
+  if (index < tokens.size()) {
+    return tokens[index].loc;
+  }
+  else {
+    Location loc = tokens[tokens.size() - 1].loc;
+    return make_pair(loc.second + 1, loc.second + 1);
+  }
+}
+
 int
 Scanner::get_repeat_lower()
 {
@@ -725,22 +809,22 @@ Scanner::get_character()
   return tokens[index].character;
 }
 
-string
-Scanner::get_name()
-{
-  TokenType type = get_type();
-  assert(type == BACKREFERENCE || type == NAMED_GROUP_EXT);
-
-  return tokens[index].name;
-}
-
 int
-Scanner::get_backref_value()
+Scanner::get_group_num()
 {
   TokenType type = get_type();
   assert(type == BACKREFERENCE);
 
-  return tokens[index].backref_value;
+  return tokens[index].group_num;
+}
+
+string
+Scanner::get_group_name()
+{
+  TokenType type = get_type();
+  assert(type == BACKREFERENCE || type == NAMED_GROUP_EXT);
+
+  return tokens[index].group_name;
 }
 
 void
@@ -791,26 +875,7 @@ Scanner::is_char_range()
 
   if (tokens[index].type == CHARACTER &&
       tokens[index+2].type == CHARACTER) {
-    if (tokens[index].character > tokens[index+2].character) {
-      stringstream s;
-      s << "VIOLATION (bad range): Improperly formed range "
-        << tokens[index].character << "-"
-	<< tokens[index+2].character << endl;
-      throw EgretException(s.str());
-    }
     return true;
-  }
-  else if (tokens[index].type == CHARACTER &&
-      tokens[index+2].type == CHAR_CLASS) {
-    throw EgretException("VIOLATION (bad range): Improperly constructed range using char class");
-  }
-  else if (tokens[index].type == CHAR_CLASS &&
-      tokens[index+2].type == CHARACTER) {
-    throw EgretException("VIOLATION (bad range): Improperly constructed range using char class");
-  }
-  else if (tokens[index].type == CHAR_CLASS &&
-      tokens[index+2].type == CHAR_CLASS) {
-    throw EgretException("VIOLATION (bad range): Improperly constructed range using char class");
   }
   return false;
 }
@@ -820,6 +885,7 @@ Scanner::print()
 {
   cout << "Scanner: " << endl;
   for (unsigned i = 0; i < tokens.size(); i++) {
+    cout << tokens[i].loc.first << "-" << tokens[i].loc.second << ": ";
     cout << token_type_to_str(tokens[i].type);
     if (tokens[i].type == REPEAT) {
       cout << ":" << tokens[i].repeat_lower << "," << tokens[i].repeat_upper;

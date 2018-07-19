@@ -1,6 +1,6 @@
 /*  Scanner.h: scanner for regular expression, used by parser 
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     Some code in this file was derived from a RE->NFA converter
@@ -25,10 +25,14 @@
 #ifndef SCANNER_H
 #define SCANNER_H
 
-#include <vector>
 #include <string>
+#include <vector>
 #include "Stats.h"
+#include "Util.h"
 using namespace std;
+
+// TODO: Separate token into a separate file?
+// TODO: Have the scanner stop after producing a list of tokens?
 
 // Types of tokens
 typedef enum
@@ -51,18 +55,19 @@ typedef enum
   NO_GROUP_EXT,		// (?:...)
   NAMED_GROUP_EXT,	// (?P<name>...)
   IGNORED_EXT,		// extensions that are ignored
-  BACKREFERENCE,    // backreferences
+  BACKREFERENCE,        // backreferences
   ERR			// error 
 } TokenType;
 
 struct Token
 {
   TokenType type;
+  Location loc;         // location in regular expression <start, end>
   int repeat_lower;	// for REPEAT
   int repeat_upper;	// for REPEAT (-1 for no limit)
   char character;	// for CHARACTER and CHAR_CLASS
-  int backref_value;  // for BACKREFERENCE
-  string name;  // FOR BACKREFERENCE
+  int group_num;        // for BACKREFERENCE
+  string group_name;    // for BACKREFERENCE and NAMED_GROUP_EXT
 };
 
 // A scanner class, encapsulates the input stream as a set of tokens
@@ -70,14 +75,21 @@ struct Token
 class Scanner {
 
 public:
+
+  vector <Token> get_tokens() { return tokens; }
+
   // scans through input string and creates a vector of tokens
   void init(string in);
 
+  // TODO: Consider returning a token instead of all these specialized functions
   // returns type for current token
   TokenType get_type();
 
   // returns type string for current token
   string get_type_str();
+
+  // returns location for current token
+  Location get_loc();
 
   // returns repeat lower bound of current token
   int get_repeat_lower();
@@ -88,11 +100,11 @@ public:
   // returns character associated with current token
   char get_character();
 
-  // returns the backreference value (group number for referenced group)
-  int get_backref_value();
+  // returns the group number for a backreference
+  int get_group_num();
 
-  // gets the backreference name (for named backreference groups)
-  string get_name();
+  // returns the group name for a backreference or named group
+  string get_group_name();
 
   // advance to the next token
   void advance();

@@ -1,6 +1,6 @@
 /*  RegexString.cpp: represents a regex string
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     This file is part of EGRET.
@@ -27,44 +27,44 @@
 using namespace std;
 
 void
-RegexString::gen_min_iter_string(TestString &min_iter_string)
+RegexString::gen_min_iter_string(string &min_iter_string)
 {
   if (repeat_lower != 0) {
     min_iter_string.append(get_substring());
   }
 }
 
-vector <TestString>
-RegexString::gen_evil_strings(TestString test_string, const set <char> &punct_marks)
+vector <string>
+RegexString::gen_evil_strings(string test_string, const set <char> &punct_marks)
 {
-  vector <TestString> evil_substrings; // set of evil substrings
+  vector <string> evil_substrings; // set of evil substrings
 
   // create suffix: substring after the loop
   int start = prefix.size() + substring.size();
-  TestString suffix = test_string.create_substr(start);
+  string suffix = test_string.substr(start);
 
   // insert one letter strings
-  add_evil_substring(evil_substrings, "");
-  add_evil_substring(evil_substrings, "_");
-  add_evil_substring(evil_substrings, "6");
-  add_evil_substring(evil_substrings, " ");
+  evil_substrings.push_back("");
+  evil_substrings.push_back("_");
+  evil_substrings.push_back("6");
+  evil_substrings.push_back(" ");
 
   // insert string with just first character of substring
-  evil_substrings.push_back(substring.create_substr(0, 1));
+  evil_substrings.push_back(substring.substr(0, 1));
 
   // split test string into two halves
   unsigned int half = substring.size() / 2;
-  TestString before = substring.create_substr(0, half);
-  TestString after = substring.create_substr(half);
+  string before = substring.substr(0, half);
+  string after = substring.substr(half);
 
   // insert strings with added digit, space, and underscore
-  add_evil_substring(evil_substrings, before, "4", after);
-  add_evil_substring(evil_substrings, before, " ", after);
-  add_evil_substring(evil_substrings, before, "_", after);
+  evil_substrings.push_back(before + "4" + after);
+  evil_substrings.push_back(before + " " + after);
+  evil_substrings.push_back(before + "_" + after);
 
   // insert all uppercase, all lowercase, and mixed case where
   // the first char is lowercase and the second char is uppercase
-  string all_upper = substring.get_string();
+  string all_upper = substring;
   string all_lower = all_upper;
   string mixed = all_upper;
 
@@ -77,49 +77,28 @@ RegexString::gen_evil_strings(TestString test_string, const set <char> &punct_ma
       mixed[i] = toupper(mixed[i], locale());
     }
   }
-  add_evil_substring(evil_substrings, all_upper);
-  add_evil_substring(evil_substrings, all_lower);
-  add_evil_substring(evil_substrings, mixed);
+  evil_substrings.push_back(all_upper);
+  evil_substrings.push_back(all_lower);
+  evil_substrings.push_back(mixed);
   
   // insert strings for each punctation mark
   if (char_set->allows_punctuation()) {
     set <char>::iterator it;
     for (it = punct_marks.begin(); it != punct_marks.end(); it++) {
-      add_evil_substring(evil_substrings, string(1, *it));
+      // TODO: This string constructor the most logical?
+      evil_substrings.push_back(string(1, *it));
     }
   }
 
   // generate the new full strings
-  vector <TestString> evil_strings;
-  vector <TestString>::iterator tsi;
+  vector <string> evil_strings;
+  vector <string>::iterator tsi;
   for (tsi = evil_substrings.begin(); tsi != evil_substrings.end(); tsi++) {
-    TestString new_string;
-    new_string.append(prefix);
-    new_string.append(*tsi);
-    new_string.append(suffix);
+    string new_string = prefix + *tsi + suffix;
     evil_strings.push_back(new_string);
   }
 
   return evil_strings;
-}
-
-void
-RegexString::add_evil_substring(vector <TestString> &evil_substrings, string s)
-{
-  TestString t;
-  t.append(s);
-  evil_substrings.push_back(t);
-}
-
-void
-RegexString::add_evil_substring(vector <TestString> &evil_substrings,
-   TestString before, string s, TestString after)
-{
-  TestString t;
-  t.append(before);
-  t.append(s);
-  t.append(after);
-  evil_substrings.push_back(t);
 }
 
 void

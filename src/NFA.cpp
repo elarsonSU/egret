@@ -1,6 +1,6 @@
 /*  NFA.cpp: Nondeterminstic Finite State Automaton
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     Some code in this file was derived from a RE->NFA converter
@@ -28,9 +28,10 @@
 #include "Edge.h"
 #include "NFA.h"
 #include "ParseTree.h"
-#include "error.h"
+#include "Util.h"
 using namespace std;
 
+// TODO: No location information for epsilon edge.  OK?
 static Edge EPSILON = Edge(EPSILON_EDGE);
 
 NFA::NFA(unsigned int _size, unsigned int _initial, unsigned int  _final)
@@ -92,40 +93,34 @@ NFA::build_nfa_from_tree(ParseNode *tree)
   switch (tree->type) {
 
   case ALTERNATION_NODE:
-    return build_nfa_alternation(build_nfa_from_tree(tree->left),
-	build_nfa_from_tree(tree->right));
+    return build_nfa_alternation(tree);
 
   case CONCAT_NODE:
-    return build_nfa_concat(build_nfa_from_tree(tree->left),
-	build_nfa_from_tree(tree->right));
+    return build_nfa_concat(tree);
 
   case REPEAT_NODE:
-    if (is_regex_string(tree->left, tree->repeat_lower, tree->repeat_upper))
-      return build_nfa_string(tree->left, tree->repeat_lower, tree->repeat_upper);
-    else
-      return build_nfa_repeat(build_nfa_from_tree(tree->left),
-	tree->repeat_lower, tree->repeat_upper);
+    return build_nfa_repeat(tree);
 
   case GROUP_NODE:
-    return build_nfa_group(build_nfa_from_tree(tree->left), tree->name, tree->group_num);
+    return build_nfa_group(tree);
 
   case CHARACTER_NODE:
-    return build_nfa_character(tree->character);
+    return build_nfa_character(tree);
 
   case CARET_NODE:
-    return build_nfa_caret();
+    return build_nfa_caret(tree);
 
   case DOLLAR_NODE:
-    return build_nfa_dollar();
+    return build_nfa_dollar(tree);
 
   case CHAR_SET_NODE:
-    return build_nfa_char_set(tree->char_set);
+    return build_nfa_char_set(tree);
 
   case IGNORED_NODE:
-    return build_nfa_ignored();
+    return build_nfa_ignored(tree);
 
   case BACKREFERENCE_NODE:
-    return build_nfa_backreference(tree->name, tree->backref_value, tree->backref_id);
+    return build_nfa_backreference(tree);
 
   default:
     throw EgretException("ERROR (internal): Invalid node type in parse tree");
@@ -133,8 +128,11 @@ NFA::build_nfa_from_tree(ParseNode *tree)
 }
 
 NFA
-NFA::build_nfa_alternation(NFA nfa1, NFA nfa2)
+NFA::build_nfa_alternation(ParseNode *tree)
 {
+  NFA nfa1 = build_nfa_from_tree(tree->left);
+  NFA nfa2 = build_nfa_from_tree(tree->right);
+
   // How this is done: the new nfa must contain all the states in
   // nfa1 and nfa2, plus new initial and final states.
   // First will come the new initial state, then nfa1's states, then
@@ -169,7 +167,132 @@ NFA::build_nfa_alternation(NFA nfa1, NFA nfa2)
 }
 
 NFA
-NFA::build_nfa_concat(NFA nfa1, NFA nfa2)
+NFA::build_nfa_concat(ParseNode *tree)
+{
+  NFA nfa1 = build_nfa_from_tree(tree->left);
+  NFA nfa2 = build_nfa_from_tree(tree->right);
+  return concat_nfa(nfa1, nfa2);
+}
+
+NFA
+NFA::build_nfa_repeat(ParseNode *tree)
+{
+  int repeat_lower = tree->repeat_lower;
+  int repeat_upper = tree->repeat_upper;
+
+  // if repeat represents a string, build a regex string instead
+  if (is_regex_string(tree->left, repeat_lower, repeat_upper))
+    return build_nfa_string(tree);
+
+  // create NFA for repeated segment
+  NFA nfa = build_nfa_from_tree(tree->left);
+
+  // make room for the new initial state
+  nfa.shift_states(1);
+
+  // make room for the new final state
+  nfa.append_empty_state();
+
+  // create new loop
+  RegexLoop *regex_loop = new RegexLoop(repeat_lower, repeat_upper);
+
+  // Util new edges
+  Edge *edge = new Edge(BEGIN_LOOP_EDGE, tree->loc, regex_loop);
+  nfa.add_edge(0, nfa.initial, edge);	   // new initial to old initial
+  edge = new Edge(END_LOOP_EDGE, tree->loc, regex_loop);
+  nfa.add_edge(nfa.final, nfa.size - 1, edge); // old final to new final
+
+  // update states
+  nfa.initial = 0;
+  nfa.final = nfa.size - 1;
+
+  return nfa;
+}
+
+NFA
+NFA::build_nfa_string(ParseNode *tree)
+{
+  NFA nfa(2, 0, 1);
+  RegexString *regex_str =
+    new RegexString(tree->left->char_set, tree->repeat_lower, tree->repeat_upper);
+  Location loc = make_pair(tree->left->loc.first, tree->loc.second);
+  Edge *edge = new Edge(STRING_EDGE, loc, regex_str);
+  nfa.add_edge(0, 1, edge);
+
+  return nfa;
+}
+
+NFA
+NFA::build_nfa_group(ParseNode *tree)
+{
+  return build_nfa_from_tree(tree->left);
+}
+
+
+NFA
+NFA::build_nfa_character(ParseNode *tree)
+{
+  NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
+  Edge *edge = new Edge(CHARACTER_EDGE, tree->loc, tree->character);
+  nfa.add_edge(0, 1, edge);
+  return nfa;
+}
+
+NFA
+NFA::build_nfa_caret(ParseNode *tree)
+{
+  NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
+  Edge *edge = new Edge(CARET_EDGE, tree->loc);
+  nfa.add_edge(0, 1, edge);
+  return nfa;
+}
+
+NFA
+NFA::build_nfa_dollar(ParseNode *tree)
+{
+  NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
+  Edge *edge = new Edge(DOLLAR_EDGE, tree->loc);
+  nfa.add_edge(0, 1, edge);
+  return nfa;
+}
+
+NFA
+NFA::build_nfa_char_set(ParseNode *tree)
+{
+  NFA nfa(2, 0, 1);     // size = 2, initial = 0, final = 1
+  Edge *edge = new Edge(CHAR_SET_EDGE, tree->loc, tree->char_set);
+  nfa.add_edge(0, 1, edge);
+  return nfa;
+}
+
+NFA
+NFA::build_nfa_ignored(ParseNode *tree)
+{
+  NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
+  nfa.add_edge(0, 1, &EPSILON);
+  return nfa;
+}
+
+NFA
+NFA::build_nfa_backreference(ParseNode *tree)
+{
+  NFA nfa(2, 0, 1);     // size = 2, initial = 0, final = 1
+  Edge *edge = new Edge(BACKREFERENCE_EDGE, tree->loc, tree->backref);
+  nfa.add_edge(0, 1, edge);
+  return nfa;
+}
+
+void
+NFA::add_edge(unsigned int from, unsigned int to, Edge *edge)
+{
+  assert(from < size);
+  assert(to < size);
+
+  edge_table[from][to] = edge;
+}
+
+NFA
+NFA::concat_nfa(NFA nfa1, NFA nfa2)
 {
   // How this is done: First will come nfa1, then nfa2 (its
   // initial state replaced with nfa1's final state)
@@ -191,123 +314,6 @@ NFA::build_nfa_concat(NFA nfa1, NFA nfa2)
   new_nfa.initial = nfa1.initial;
 
   return new_nfa;
-}
-
-NFA
-NFA::build_nfa_repeat(NFA nfa, int repeat_lower, int repeat_upper)
-{
-  // make room for the new initial state
-  nfa.shift_states(1);
-
-  // make room for the new final state
-  nfa.append_empty_state();
-
-  // create new loop
-  RegexLoop *regex_loop = new RegexLoop(repeat_lower, repeat_upper);
-
-  // add new edges
-  Edge *edge = new Edge(BEGIN_LOOP_EDGE, regex_loop);
-  nfa.add_edge(0, nfa.initial, edge);	   // new initial to old initial
-  edge = new Edge(END_LOOP_EDGE, regex_loop);
-  nfa.add_edge(nfa.final, nfa.size - 1, edge); // old final to new final
-
-  // update states
-  nfa.initial = 0;
-  nfa.final = nfa.size - 1;
-
-  return nfa;
-}
-
-NFA
-NFA::build_nfa_string(ParseNode *node, int repeat_lower, int repeat_upper)
-{
-  NFA nfa(2, 0, 1);
-  RegexString *regex_str = new RegexString(node->char_set, repeat_lower, repeat_upper);
-  Edge *edge = new Edge(STRING_EDGE, regex_str);
-  nfa.add_edge(0, 1, edge);
-
-  return nfa;
-}
-
-NFA
-NFA::build_nfa_group(NFA nfa, string name, int num)
-{
-  
-  NFA nfa1(2, 0, 1);
-  Edge *begin_edge = new Edge(BEGIN_GROUP_EDGE, name, num);
-  nfa1.add_edge(0, 1, begin_edge);
-
-  NFA nfa2(2, 0, 1);
-  Edge *end_edge = new Edge(END_GROUP_EDGE, name, num);
-  nfa2.add_edge(0, 1, end_edge);
-
-  NFA ret(nfa.size+2, 0, nfa.size+1);
-  ret = build_nfa_concat(nfa1, nfa);
-  ret = build_nfa_concat(ret, nfa2);
-  
-  return ret;
-}
-
-NFA
-NFA::build_nfa_backreference(string name, int num, int id)
-{
-  NFA nfa(2, 0, 1);     // size = 2, initial = 0, final = 1
-  Edge *edge = new Edge(BACKREFERENCE_EDGE, name, num, id);
-  nfa.add_edge(0, 1, edge);
-  return nfa;
-}
-
-NFA
-NFA::build_nfa_character(char character)
-{
-  NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
-  Edge *edge = new Edge(CHARACTER_EDGE, character);
-  nfa.add_edge(0, 1, edge);
-  return nfa;
-}
-
-NFA
-NFA::build_nfa_caret()
-{
-  NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
-  Edge *edge = new Edge(CARET_EDGE);
-  nfa.add_edge(0, 1, edge);
-  return nfa;
-}
-
-NFA
-NFA::build_nfa_dollar()
-{
-  NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
-  Edge *edge = new Edge(DOLLAR_EDGE);
-  nfa.add_edge(0, 1, edge);
-  return nfa;
-}
-
-NFA
-NFA::build_nfa_ignored()
-{
-  NFA nfa(2, 0, 1);	// size = 2, initial = 0 , final = 1
-  nfa.add_edge(0, 1, &EPSILON);
-  return nfa;
-}
-
-NFA
-NFA::build_nfa_char_set(CharSet *char_set)
-{
-  NFA nfa(2, 0, 1);     // size = 2, initial = 0, final = 1
-  Edge *edge = new Edge(CHAR_SET_EDGE, char_set);
-  nfa.add_edge(0, 1, edge);
-  return nfa;
-}
-
-void
-NFA::add_edge(unsigned int from, unsigned int to, Edge *edge)
-{
-  assert(from < size);
-  assert(to < size);
-
-  edge_table[from][to] = edge;
 }
 
 void
@@ -453,10 +459,8 @@ NFA::add_stats(Stats &stats)
   int end_loop_count = 0;
   int caret_count = 0;
   int dollar_count = 0;
-  int epsilon_count = 0;
   int backreference_count = 0;
-  int begin_group_count = 0;
-  int end_group_count = 0;
+  int epsilon_count = 0;
 
   for (unsigned int from = 0; from < size; from++) {
     for (unsigned int to = 0; to < size; to++) {
@@ -485,17 +489,11 @@ NFA::add_stats(Stats &stats)
 	  case DOLLAR_EDGE:
 	    dollar_count++;
 	    break;
-	  case EPSILON_EDGE:
-	    epsilon_count++;
-	    break;
 	  case BACKREFERENCE_EDGE:
 	    backreference_count++;
 	    break;
-	  case BEGIN_GROUP_EDGE:
-	    begin_group_count++;
-	    break;
-	  case END_GROUP_EDGE:
-	    end_group_count++;
+	  case EPSILON_EDGE:
+	    epsilon_count++;
 	    break;
 	}
       }
@@ -511,8 +509,6 @@ NFA::add_stats(Stats &stats)
   stats.add("NFA", "NFA end loop edges", end_loop_count);
   stats.add("NFA", "NFA caret edges", caret_count);
   stats.add("NFA", "NFA dollar edges", dollar_count);
-  stats.add("NFA", "NFA epsilon edges", epsilon_count);
   stats.add("NFA", "NFA backreference edges", backreference_count);
-  stats.add("NFA", "NFA begin group edges", begin_group_count);
-  stats.add("NFA", "NFA end group edges", end_group_count);
+  stats.add("NFA", "NFA epsilon edges", epsilon_count);
 }

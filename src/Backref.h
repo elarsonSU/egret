@@ -1,4 +1,4 @@
-/*  RegexLoop.h: represents a regex repeat quantifier
+/*  Backref.h: represents a backreference
 
     Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
@@ -19,35 +19,33 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef REGEX_LOOP_H
-#define REGEX_LOOP_H
+#ifndef BACKREF_H
+#define BACKREF_H
 
 #include <string>
 #include <vector>
+#include "Util.h"
 using namespace std;
 
-class RegexLoop {
+class Backref {
 
 public:
 
-  RegexLoop(int lower, int upper) {
-    repeat_lower = lower;
-    repeat_upper = upper;
+  Backref(string name, int number, Location l) {
+    group_name = name;
+    group_number = number;
+    group_loc = l;
   }
 
   // setters
-  void set_prefix(string p) { prefix = p; }
+  void set_curr_prefix(string s) { curr_prefix = s; }
+  void set_curr_substring(string s) { curr_substring = s; }
+  void set_prefix_from_curr() { prefix = curr_prefix; }
   void set_substring_from_curr() { substring = curr_substring; }
-  void set_curr_prefix(string p) { curr_prefix = p; }
-  void set_curr_substring(string test_string);
 
   // getters
-  int get_repeat_lower() { return repeat_lower; }
-  int get_repeat_upper() { return repeat_upper; }
-  string get_substring();
-
-  // property functions - used by checker
-  bool is_opt_repeat();
+  Location get_group_loc() { return group_loc; }
+  string get_substring() { return substring; }
 
   // generate minimum iteration string
   void gen_min_iter_string(string &min_iter_string);
@@ -60,16 +58,16 @@ public:
 
 private:
 
-  int repeat_lower;     	// lower bound for repeat quantifiers 
-  int repeat_upper;     	// upper bound for repeat quantifiers (-1 if no bound)
+  string group_name;            // name of group (blank if using numbered backreference)
+  int group_number;             // number of group
+  Location group_loc;           // location of group
 
-  // TODO: Rename these to something like evil prefix
-  string prefix;       	        // prefix of test string before the loop
-  string substring;    	        // substring corresponding to loop
+  string prefix;       	        // prefix of test string before the backreference
+  string substring;    	        // substring corresponding to backreference
 
   string curr_prefix;           // current path string up to visiting this node
-  string curr_substring;        // current substring corresponding to this string
+  string curr_substring;        // current substring corresponding to this backreference
 };
 
-#endif // REGEX_LOOP_H
+#endif // BACKREF_H
 

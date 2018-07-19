@@ -1,6 +1,6 @@
 /*  CharSet.h: Character set
 
-    Copyright (C) 2016  Eric Larson and Anna Kirk
+    Copyright (C) 2016-2018  Eric Larson and Anna Kirk
     elarson@seattleu.edu
 
     This file is part of EGRET.
@@ -25,8 +25,10 @@
 #include <set>
 #include <string>
 #include <vector>
-#include "TestString.h"
+#include "Util.h"
 using namespace std;
+
+class Path;             // breaks a circular dependency CharSet --> Path --> Edge --> CharSet
 
 typedef enum
 {
@@ -50,7 +52,7 @@ public:
   CharSet() { complement = false; checked = false; }
 
   // setters
-  void set_prefix(TestString p) { prefix = p; }
+  void set_prefix(string p) { prefix = p; }
   void set_complement(bool c) { complement = c; }
 
   // getters
@@ -63,53 +65,76 @@ public:
 
   // PROPERTY FUNCTIONS
 
+  // returns true if character set is a single character
+  bool is_single_char();
+
+  // returns true if character set is a wildcard
+  bool is_wildcard();
+
   // returns true if character set is a string candidate
   bool is_string_candidate();
 
   // returns true if character set allows punctuation
   bool allows_punctuation();
 
-  // returns true if character set only has characters
-  bool only_has_characters();
+  // returns true if character set only has punctuation and spaces
+  bool only_has_punc_and_spaces();
+
+  // determines if a character is valid 
+  bool is_valid_character(char character);
+
+  // returns true if character is explicitly part of non-negated character set
+  bool has_character_item(char character);
 
   // returns the character set as a sorted string
   string get_charset_as_string();
 
-  // TEST GENERATION FUNCTIONS
-
   // gets a single valid character
-  char get_valid_character();
+  char get_valid_character(char except = '\0');
 
-  // generate evil strings
-  vector <TestString> gen_evil_strings(TestString test_string, const set <char> &punct_marks);
-
-  // CHECKER FUNCTION
+  // CHECKER FUNCTIONS
 
   // checks the character set, emits warnings if necessary
-  void check();
+  void check(Path *path, Location loc);
+
+  // repeat puncutation checking functions
+  bool is_repeat_punc_candidate();
+  char get_repeat_punc_char();
+
+  // digit too optional checking functions
+  bool is_digit_too_optional_candidate();
+
+  // TEST GENERATION FUNCTIONS
+
+  // generate evil strings
+  vector <string> gen_evil_strings(string test_string, const set <char> &punct_marks);
 
   // PRINT FUNCTION
 
   // print the character set
   void print();
 
-
 private:
 
   vector <CharSetItem> items;	// set of items comprising the set
   bool complement;		// true if set is complemented
-  TestString prefix;		// path string up to visiting this node
+  string prefix;		// path string up to visiting this node
   bool checked;			// true of charset has been checked
 
-  // determines if a character is valid in a complemented character set
-  bool is_valid_character(char character);
-
+  // checker functions
+  bool only_has_punc(bool allow_spaces = false);
+  bool is_good_range(char start, char end);
+  bool has_upper_range();
+  bool has_lower_range();
+  bool has_digit_range();
+  string fix_bad_range(Location loc);
+  bool has_range(Location loc);
+  string fix_comma_bar_charset(Location loc, char elim);
+  void replace(string &str, string from, string to);
+  string replace_charset_with_parens(Location loc);
+  
   // creates a set of test characters
   set <char> create_test_chars(const set <char> &punct_marks);
-
-  // checker functions
-  void check_single_punctuation();
-  void check_only_digits_and_punctuation();
 };
 
 #endif // CHARSET_H

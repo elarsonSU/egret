@@ -1,6 +1,6 @@
-# egret_api.py: API for EGRET web interface
+# egret_web_api.py: API for EGRET web interface
 #
-# Copyright (C) 2016  Eric Larson and Anna Kirk
+# Copyright (C) 2016-2018  Eric Larson, Anna Kirk, and Nicolas Oman
 # elarson@seattleu.edu
 # 
 # This file is part of EGRET.
@@ -25,19 +25,31 @@ def run_egret(regexStr, baseSubstring, testList):
     try:
         regex = re.compile(regexStr)
     except re.error as e:
-        status = "ERROR (compiler error): Regular expression did not compile: " + e.msg
+        status = "ERROR (compiler error): Regular expression did not compile: " + str(e)
         return ([], [], status, [])
         
-    inputStrs = egret_ext.run(regexStr, baseSubstring, False, False, False)
-    status = inputStrs[0]
-    if status[0:5] == "ERROR":
-        return ([], [], status, [])
-    elif status == "SUCCESS":
-        warnings = None
-    else:
-        warnings = status.rstrip().split("\n")
+    inputStrs = egret_ext.run(regexStr, baseSubstring, False, True, False, False)
 
-    inputStrs = inputStrs[1:]
+    idx = 0
+    line = inputStrs[idx]
+    if line[0:5] == "ERROR":
+        return ([], [], line, [])
+
+    while line != "BEGIN":
+      idx += 1;
+      line = inputStrs[idx]
+
+    if idx == 0:
+      alerts = []
+      inputStrs = inputStrs[1:]
+    else:
+      alerts = inputStrs[:idx]
+      inputStrs = inputStrs[idx+1:]
+
+    warnings = ""
+    for a in alerts:
+      warnings += a
+
     matches = []
     nonMatches = []
 
@@ -104,3 +116,74 @@ def get_group_info(regexStr, testStrings):
 
     groupHdr.insert(0, 'String')
     return (groupHdr, groupRows, len(groupHdr) - 1)
+
+def run_acre(regexStr):
+  try:
+    regex = re.compile(regexStr)
+  except re.error as e:
+    errorMsg = "ERROR (compiler error): Regular expression did not compile: " + str(e)
+    return (None, errorMsg)
+        
+  alerts = egret_ext.run(regexStr, "evil", True, True, False, False)
+
+  first_line = alerts[0]
+  if first_line[0:5] == "ERROR":
+    return (None, first_line)
+
+  status = ""
+  for s in alerts:
+
+    lines = s.split("<br>")
+    prevLine = ""
+    for line in lines: 
+
+      suppressLine = False
+      example = False
+      anchorExample = False
+      if re.match("\.\.\.String with", line) != None:
+        example = True
+        anchorExample = True
+      if re.match("\.\.\.Example", line) != None:
+        example = True
+
+      if example:
+        suppressLine = True
+        first, second = line.split(':', 1)
+        exampleStr = second[1:]
+        success = re.fullmatch(regexStr, exampleStr) != None
+        if anchorExample:
+          if prevLine != "":
+            if prevSuccess and success: # both anchor examples successful
+              status += prevLine
+              status += '<br>'
+              status += line
+              status += '<br>'
+            prevLine = ""
+          else:  # prevLine == ""
+            prevLine = line
+            prevSuccess = success
+        else:  # example but not anchor example
+          prevLine = ""
+          if success:
+            suppressLine = False
+      else: # not example
+        prevLine = ""
+
+      if re.match("\.\.\.Suggested fix", line) != None:
+        first, second = line.split(':', 1)
+        fixStr = second[1:]
+
+        try:
+          r = re.compile(fixStr)
+        except re.error as e:
+          suppressLine = True
+
+      if not suppressLine:
+        status += line
+        status += '<br>'
+
+  # get rid of line breaks at end (eliminates extra space at the end)
+  while (status[-4:] == "<br>"):
+    status = status[0:-4]
+
+  return (status, None)

@@ -3,215 +3,233 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EGRET: Evil Generation of Regular Expression Tests</title>
+  <title>EGRET/ACRE: Regular Expression Test Generation and Automatic Checking</title>
+
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
 
-</head>
-<body>
+  <style>
+    mark {
+      background-color: blue;
+      color: yellow;
+    }
+  </style>
 
+</head>
+
+<body>
+<form action="{{ url_for('process_submit') }}" method=post>
 <div class="container">
 
-  <h2> EGRET: Evil Generation of Regular Expression Tests </h2>
+  <h1> EGRET and ACRE Regular Expression Testing Tools </h1>
 
-  {% if data['warnings'] %}
-  <div class="alert alert-warning">
-    <strong>Warnings:</strong>
-    <ul>
-      {% for warning in data['warnings'] %}
-      <li> {{ warning }} </li>
-      {% endfor %}
-    </ul>
+  <div class="panel panel-default">
+    <div class="panel-body">
+      Enter regular expression
+      <input class="form-control" type="text" name="regex" value="{{ regex }}"
+        style="font-family: Courier New, Courier, monospace">
+      <br>
+      <input class="btn btn-primary" type=submit value=Submit>
+    </div>
   </div>
-  {% endif %}
 
-  {% if data['errorMsg'] %}
-  <p class="alert alert-danger"><strong>{{ data['errorMsg'] }}</strong>
-  {% endif %}
-
-  <form action="{{ url_for('process_submit') }}" method=post>
-
-    <div class="panel panel-info">
-
-      <div class="panel-heading">
-        <h2 class="panel-title">Enter regular expression</h2>
-      </div>
-
-      <div class="panel-body">
-        <input class="form-control" type="text" name="regex" value="{{ data['regex'] }}"
-          style="font-family: Courier New, Courier, monospace">
-	<br>
-        {% if data['showGroups'] %}
-	<input type="checkbox" name="showGroups" checked/>
-        {% else %}
-        <input type="checkbox" name="showGroups"/>
-        {% endif %}
-        Show groups for accepted strings
-	<br>
-	{% if data['useDiffBase'] %}
-	<input type="checkbox" name="useDiffBase" checked/>
-        {% else %}
-        <input type="checkbox" name="useDiffBase"/>
-        {% endif %}
-	Select base substring for strings such as \w+ (default is "evil"):
-        <input type="text" name="baseSubstr" value="{{ data['baseSubstr'] }}"
-          style="font-family: Courier New, Courier, monospace">
-	<br>
-	<br>
-        <input class="btn btn-primary" type=submit value=Submit>
-      </div>
-
-    </div>
-    
-    <div class="panel panel-info">
-
-      <div class="panel-heading">
-        <h2 class="panel-title">Try your own test string (optional)</h2>
-      </div>
-
-      <div class="panel-body">
-        {% if data['testString'] %}
-        <input class="form-control" type="text" name="testString" value="{{ data['testString'] }}"
-          style="font-family: Courier New, Courier, monospace"><br>
-	{% else %}
-        <input class="form-control" type="text" name="testString"
-          style="font-family: Courier New, Courier, monospace"><br>
-        {% endif %}
-
-        <input class="btn btn-primary" type=submit value=Test>
-        <input class="btn btn-primary" type=submit name="addTestString" value="Save test string">
-
-        {% if data['testResult'] == "ACCEPTED" %}
-	<h3><span class="label label-success"> {{ data['testResult'] }} </span></h3>
-        {% elif data['testResult'] == "REJECTED" %}
-	<h3><span class="label label-danger"> {{ data['testResult'] }} </span></h3>
-        {% endif %}
-      </div>
-
+  <div class="panel panel-success">
+    <div class="panel-heading">
+      <h2 class="panel-title">ACRE: Automatic Checking of Regular Expressions</h2>
     </div>
 
-    <div class="panel panel-info">
+    <div class="panel-body">
+      {% if acre_error %}
+      <p class="alert alert-danger"><strong>{{ acre_error }}</strong>
+      {% endif %}
+      {% if acre_result %}
+      <p style="font-family:'Courier New'">{{ acre_result }} </p>
+      {% endif %}
+    </div>
+  </div>
 
-      <div class="panel-heading">
-        <h2 class="panel-title">Accepted Strings</h2>
+  <div class="panel panel-success">
+
+    <div class="panel-heading">
+      <h2 class="panel-title">EGRET: Evil Generation of Regular Expression Tests</h2>
+    </div>
+
+    <div class="panel-body">
+
+      <div class="panel panel-default">
+        <div class="panel-body">
+          {% if egret['showGroups'] %}
+          <input type="checkbox" name="showGroups" checked/>
+          {% else %}
+          <input type="checkbox" name="showGroups"/>
+          {% endif %}
+          Show groups for accepted strings
+          <br>
+
+          {% if egret['useDiffBase'] %}
+          <input type="checkbox" name="useDiffBase" checked/>
+          {% else %}
+          <input type="checkbox" name="useDiffBase"/>
+          {% endif %}
+          Select base substring for strings such as \w+ (default is "evil"):
+          <input type="text" name="baseSubstr" value="{{ egret['baseSubstr'] }}"
+            style="font-family: Courier New, Courier, monospace">
+        </div>
       </div>
 
-      <div class="panel-body">
+      {% if egret['warnings'] %}
+      <div class="alert alert-warning">
+        <strong>Warnings:</strong><br>
+        <p style="font-family:'Courier New'">{{ egret['warnings'] }} </p>
+      </div>
+      {% endif %}
 
-        {% if data['groupHdr'] %}
-        <table class="table table-bordered">
-          <tr>
-            <th></th>
-            <th colspan="{{ data['numGroups'] }}" style="text-align:center">Groups</th>
-          </tr>
-          <tr>
-            {% for item in data['groupHdr'] %}
-            <th> {{ item }} </th>
+      {% if egret['errorMsg'] %}
+      <p class="alert alert-danger"><strong>{{ egret['errorMsg'] }}</strong>
+      {% endif %}
+
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <h2 class="panel-title">Accepted Strings</h2>
+        </div>
+
+        <div class="panel-body">
+
+          {% if egret['groupHdr'] %}
+          <table class="table table-bordered">
+            <tr>
+              <th></th>
+              <th colspan="{{ egret['numGroups'] }}" style="text-align:center">Groups</th>
+            </tr>
+            <tr>
+              {% for item in egret['groupHdr'] %}
+              <th> {{ item }} </th>
+              {% endfor %}
+            </tr>
+            {% for row in egret['groupRows'] %}
+            <tr>
+	      {% for item in row %}
+	      <td> 
+                {% if loop.index == 1 %}
+                {% if item in test_strings %}
+                <input type=checkbox name=accept value="{{ item }}" checked disabled>
+                {% else %}
+                <input type=checkbox name=accept value="{{ item }}">
+                {% endif %}
+                {% endif %}
+                <font face="Courier New, Courier, monospace"> {{ item }} </font>
+	      </td>
+	      {% endfor %}
+            </tr>
             {% endfor %}
-          </tr>
-          {% for row in data['groupRows'] %}
-          <tr>
-	    {% for item in row %}
-	    <td> 
-              {% if loop.index == 1 %}
-              {% if item in session %}
-              <input type=checkbox name=accept value="{{ item }}" checked disabled>
-              {% else %}
-              <input type=checkbox name=accept value="{{ item }}">
-              {% endif %}
-              {% endif %}
-              <font face="Courier New, Courier, monospace"> {{ item }} </font>
-	    </td>
-	    {% endfor %}
-          </tr>
-          {% endfor %}
-        </table>
+          </table>
 
-        {% else %}
-        <font face="Courier New, Courier, monospace">
-          {% for item in data['passList'] %}
-          {% if item in session %}
-          <input type=checkbox name=accept value="{{ item }}" checked disabled>
           {% else %}
-          <input type=checkbox name=accept value="{{ item }}">
-          {% endif %}
-          {{ item }}
-	  <br>
-          {% endfor %}
-        </font>
-        <br>
-        {% endif %}
-        <input class="btn btn-primary" type=submit name="addSelectedAccept" value="Save selected strings">
-        <input class="btn btn-primary" type=submit name="addAccept" value="Save all accepted strings">
-      </div>
-
-    </div>
-
-    <div class="panel panel-info">
-
-      <div class="panel-heading">
-        <h2 class="panel-title">Rejected Strings</h2>
-      </div>
-
-      <div class="panel-body">
-        <font face="Courier New, Courier, monospace">
-          {% for item in data['failList'] %}
-          {% if item in session %}
-          <input type=checkbox name=reject value="{{ item }}" checked disabled>
-          {% else %}
-          <input type=checkbox name=reject value="{{ item }}">
-          {% endif %}
-          {{ item }}
+          <font face="Courier New, Courier, monospace">
+            {% for item in egret['passList'] %}
+            {% if item in test_strings %}
+            <input type=checkbox name=accept value="{{ item }}" checked disabled>
+            {% else %}
+            <input type=checkbox name=accept value="{{ item }}">
+            {% endif %}
+            {{ item }}
+	    <br>
+            {% endfor %}
+          </font>
           <br>
-          {% endfor %}
-        </font>
-        <br>
-        <input class="btn btn-primary" type=submit name="addSelectedReject" value="Save selected strings">
-        <input class="btn btn-primary" type=submit name="addReject" value="Save all rejected strings">
+          {% endif %}
+          <input class="btn btn-primary" type=submit name="addSelectedAccept" value="Save selected strings">
+          <input class="btn btn-primary" type=submit name="addAccept" value="Save all accepted strings">
+        </div>
       </div>
 
-    </div>
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <h2 class="panel-title">Rejected Strings</h2>
+        </div>
 
-    <div class="panel panel-info">
-
-      <div class="panel-heading">
-        <h2 class="panel-title">Saved Strings</h2>
-      </div>
-
-      <div class="panel-body">
-        <font face="Courier New, Courier, monospace">
-          {% for item in session %}
-          <input type=checkbox name=delete value="{{ item }}">
-          {{ item }}
+        <div class="panel-body">
+          <font face="Courier New, Courier, monospace">
+            {% for item in egret['failList'] %}
+            {% if item in test_strings %}
+            <input type=checkbox name=reject value="{{ item }}" checked disabled>
+            {% else %}
+            <input type=checkbox name=reject value="{{ item }}">
+            {% endif %}
+            {{ item }}
+            <br>
+            {% endfor %}
+          </font>
           <br>
-          {% endfor %}
-        </font>
-        <br>
-        <a href="/download" class="btn btn-primary">Download session</a>
-        <a href="/upload" class="btn btn-primary">Upload session</a>
-        <input class="btn btn-primary" type=submit name="deleteSelected" value="Remove selected strings">
-        <input class="btn btn-primary" type=submit name="deleteAll" value="Remove all strings">
+          <input class="btn btn-primary" type=submit name="addSelectedReject" value="Save selected strings">
+          <input class="btn btn-primary" type=submit name="addReject" value="Save all rejected strings">
+        </div>
+      </div>
+
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <h2 class="panel-title">Try your own test string (optional)</h2>
+        </div>
+
+        <div class="panel-body">
+          {% if egret['testString'] %}
+          <input class="form-control" type="text" name="testString" value="{{ egret['testString'] }}"
+            style="font-family: Courier New, Courier, monospace"><br>
+	  {% else %}
+          <input class="form-control" type="text" name="testString"
+            style="font-family: Courier New, Courier, monospace"><br>
+          {% endif %}
+
+          <input class="btn btn-primary" type=submit value=Test>
+          <input class="btn btn-primary" type=submit name="addTestString" value="Save test string">
+
+          {% if egret['testResult'] == "ACCEPTED" %}
+	  <h3><span class="label label-success"> {{ egret['testResult'] }} </span></h3>
+          {% elif egret['testResult'] == "REJECTED" %}
+	  <h3><span class="label label-danger"> {{ egret['testResult'] }} </span></h3>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <h2 class="panel-title">Saved Strings</h2>
+        </div>
+
+        <div class="panel-body">
+          <font face="Courier New, Courier, monospace">
+            {% for item in test_strings %}
+            <input type=checkbox name=delete value="{{ item }}">
+            {{ item }}
+            <br>
+            {% endfor %}
+          </font>
+          <br>
+          <a href="/download" class="btn btn-primary">Download session</a>
+          <a href="/upload" class="btn btn-primary">Upload session</a>
+          <input class="btn btn-primary" type=submit name="deleteSelected" value="Remove selected strings">
+          <input class="btn btn-primary" type=submit name="deleteAll" value="Remove all strings">
+        </div>
       </div>
 
     </div>
+  </div>
 
-    <div class="panel panel-danger">
-
-      <div class="panel-heading">
-        <h4 class="panel-title">About EGRET</h4>
-      </div>
-
-      <div class="panel-body">
-        <p>Copyright (C) 2017 Eric Larson, Anna Kirk, and Nicolas Oman</p>
-        <p>Program maintained by Eric Larson (elarson@seattleu.edu) at Seattle University</p>
-        <p><a href="http://fac-staff.seattleu.edu/elarson/web/egret.htm">
-          Additional information about EGRET
-        </a></p>
-      </div>
-
+  <div class="panel panel-danger">
+    <div class="panel-heading">
+      <h4 class="panel-title">About ACRE and EGRET</h4>
     </div>
 
-  </form> 
+    <div class="panel-body">
+      <p>Copyright (C) 2018 Eric Larson</p>
+      <p>Project contributors: Eric Larson, Anna Kirk, Tyler Hartje, and Nicolas Oman </p>
+      <p>Maintained by Eric Larson (elarson@seattleu.edu) at Seattle University</p>
+      <p><a href="http://fac-staff.seattleu.edu/elarson/web/egret.htm">
+        Additional information about ACRE and EGRET
+      </a></p>
+    </div>
+  </div>
 
 </div>
+</form> 
 </body>
