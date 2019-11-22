@@ -128,7 +128,7 @@ Path::check_anchor_in_middle()
     switch (edges[i]->get_type()) {
       case CARET_EDGE:
 	if (seen_non_caret) {
-          string msg = "Generated string has ^ anchor in middle: " + test_string;
+          string msg = "Generated string has ^ anchor in the middle: " + test_string;
           Alert a("anchor middle", msg, seen_non_caret_loc, edges[i]->get_loc());
           Util::get()->add_alert(a);
 	  return true;
@@ -147,7 +147,7 @@ Path::check_anchor_in_middle()
 	seen_non_caret = true;
         seen_non_caret_loc = edges[i]->get_loc();
 	if (seen_dollar) {
-          string msg = "Generated string has $ anchor in middle: " + test_string;
+          string msg = "Generated string has $ anchor in the middle: " + test_string;
           Alert a("anchor middle", msg, seen_dollar_loc, seen_non_caret_loc);
           Util::get()->add_alert(a);
 	  return true;
